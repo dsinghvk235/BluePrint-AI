@@ -9,14 +9,37 @@ export const API_TIMEOUT_MS = 30_000
 export const ROUTES = {
   HOME: '/',
   DASHBOARD: '/dashboard',
+  WORKSPACE: '/workspace',
+  WORKSPACE_PROJECT: '/workspace/:projectId',
   PROJECTS: '/projects',
   CANVAS: '/canvas',
+  SEARCH: '/search',
+  SETTINGS: '/settings',
+  PROFILE: '/profile',
   AUTH: {
     LOGIN: '/auth/login',
     REGISTER: '/auth/register',
   },
   NOT_FOUND: '*',
 } as const
+
+export const EXAMPLE_PROMPTS = [
+  'Design Netflix',
+  'Design Uber',
+  'Design Instagram',
+  'Design Smart Hospital',
+  'Design Mars Colony',
+] as const
+
+export const LEARNING_LAYERS = [
+  { id: 'architecture', label: 'Architecture', description: 'System overview and boundaries' },
+  { id: 'component', label: 'Component', description: 'Individual service or module' },
+  { id: 'why', label: 'Why', description: 'Rationale behind the design choice' },
+  { id: 'principle', label: 'Engineering Principle', description: 'Underlying patterns and laws' },
+  { id: 'tradeoffs', label: 'Trade-offs', description: 'Costs and benefits of this approach' },
+  { id: 'alternatives', label: 'Alternatives', description: 'Other viable design options' },
+  { id: 'interview', label: 'Interview Questions', description: 'Practice questions for mastery' },
+] as const
 
 export const QUERY_STALE_TIME = {
   SHORT: 30_000,

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 
 import { QueryProvider } from './QueryProvider'
 import { ThemeProvider } from './ThemeProvider'
+import { Toaster, TooltipProvider } from '@/shared/ui'
 
 interface AppProvidersProps {
   children: ReactNode
@@ -10,7 +11,12 @@ interface AppProvidersProps {
 export function AppProviders({ children }: AppProvidersProps) {
   return (
     <QueryProvider>
-      <ThemeProvider>{children}</ThemeProvider>
+      <ThemeProvider>
+        <TooltipProvider delayDuration={300}>
+          {children}
+          <Toaster />
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryProvider>
   )
 }
