@@ -1,0 +1,59 @@
+spring:
+  application:
+    name: blueprintai
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/blueprintai
+    username: blueprintai
+    password: blueprintai
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  cache:
+    type: redis
+
+server:
+  port: 8080
+  compression:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+
+blueprintai:
+  security:
+    jwt:
+      secret: ${JWT_SECRET:change-me-in-production-use-a-secure-256-bit-secret-key}
+      expiration-ms: 86400000
+      issuer: blueprintai
+
+logging:
+  level:
+    root: INFO
+    com.blueprintai: DEBUG

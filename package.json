@@ -1,0 +1,27 @@
+{
+  "name": "blueprintai",
+  "version": "0.0.1",
+  "private": true,
+  "description": "BlueprintAI — The AI workspace for understanding how systems work.",
+  "scripts": {
+    "prepare": "husky",
+    "dev": "npm run dev --prefix frontend",
+    "build": "npm run build --prefix frontend",
+    "lint": "npm run lint --prefix frontend",
+    "format": "npm run format --prefix frontend",
+    "format:check": "npm run format:check --prefix frontend"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.4.3"
+  },
+  "lint-staged": {
+    "frontend/**/*.{ts,tsx}": [
+      "npm run lint --prefix frontend",
+      "npm run format --prefix frontend"
+    ],
+    "frontend/**/*.{json,css,md}": [
+      "npm run format --prefix frontend"
+    ]
+  }
+}
