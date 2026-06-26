@@ -29,7 +29,7 @@ export function GenerateDialog({ projectId, defaultPrompt = '' }: GenerateDialog
   function handleGenerate() {
     if (!prompt.trim()) return
     generate(
-      { projectId, systemDescription: prompt.trim(), systemType },
+      { projectId, systemDescription: prompt.trim(), systemType, useCache: false },
       { onSuccess: () => setOpen(false) },
     )
   }

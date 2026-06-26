@@ -19,7 +19,6 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ArchitectureGenerationEngine {
@@ -39,11 +38,17 @@ public class ArchitectureGenerationEngine {
         this.objectMapper = objectMapper;
     }
 
-    @Transactional
     public void executeGeneration(UUID generationId, boolean useCache) {
-        ArchitectureGeneration generation = generationRepository
-                .findById(generationId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Generation not found"));
+        ArchitectureGeneration generation;
+        try {
+            generation = generationRepository
+                    .findById(generationId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Generation not found"));
+        } catch (Exception e) {
+            log.error("Could not load generation {} to start execution", generationId, e);
+            markFailed(generationId, e.getMessage() != null ? e.getMessage() : "Generation not found");
+            return;
+        }
 
         generation.setStatus(GenerationStatus.IN_PROGRESS);
         generation.setStartedAt(Instant.now());
@@ -98,12 +103,18 @@ public class ArchitectureGenerationEngine {
 
         } catch (Exception e) {
             log.error("Architecture generation failed for {}", generationId, e);
+            markFailed(generationId, e.getMessage());
+        }
+    }
+
+    private void markFailed(UUID generationId, String errorMessage) {
+        generationRepository.findById(generationId).ifPresent(generation -> {
             generation.setStatus(GenerationStatus.FAILED);
-            generation.setErrorMessage(e.getMessage());
+            generation.setErrorMessage(errorMessage);
             generation.setCompletedAt(Instant.now());
             generation.setUpdatedAt(Instant.now());
             generationRepository.save(generation);
-        }
+        });
     }
 
     public void applySection(ObjectNode payload, ArchitectureSection section, JsonNode result) {

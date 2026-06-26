@@ -1,9 +1,13 @@
-import { motion } from 'framer-motion'
-import { BookOpen, ChevronDown, Lightbulb, MessageSquare } from 'lucide-react'
-import { useState } from 'react'
+import { BookOpen } from 'lucide-react'
+import { useEffect } from 'react'
 
 import { useCanvasStore } from '@/features/canvas/stores/canvas-store'
-import { LEARNING_LAYERS } from '@/shared/constants'
+import { DecisionLogPanel } from '@/features/learning/components/DecisionLogPanel'
+import { DependencyExplorer } from '@/features/learning/components/DependencyExplorer'
+import { LearningModeSelector } from '@/features/learning/components/LearningModeSelector'
+import { MentorChatPanel } from '@/features/learning/components/MentorChatPanel'
+import { ProgressiveLearningLayers } from '@/features/learning/components/ProgressiveLearningLayers'
+import { useLearningStore } from '@/features/learning/stores/learning-store'
 import {
   Accordion,
   AccordionContent,
@@ -17,50 +21,23 @@ import {
   TabsTrigger,
   Textarea,
 } from '@/shared/ui'
-import { cn } from '@/shared/utils'
 
-const layerContent: Record<string, { summary: string; details: string }> = {
-  architecture: {
-    summary: 'System overview — components and how they connect.',
-    details:
-      'Select a node on the canvas to see component-level explanations. The learning panel reveals architecture progressively so you are never overwhelmed.',
-  },
-  component: {
-    summary: 'Component-level detail for the selected node.',
-    details:
-      'Inspect responsibilities, protocols, and connections for each service in your diagram.',
-  },
-  why: {
-    summary: 'Design rationale behind each choice.',
-    details:
-      'Understand why each component exists and what problem it solves in the overall system.',
-  },
-  principle: {
-    summary: 'Engineering principles applied.',
-    details: 'Patterns like separation of concerns, single responsibility, and loose coupling.',
-  },
-  tradeoffs: {
-    summary: 'Costs and benefits of this approach.',
-    details:
-      'Every architecture involves trade-offs. Review latency, complexity, and operational costs.',
-  },
-  alternatives: {
-    summary: 'Other viable design options.',
-    details: 'Compare service mesh, monolith, and serverless alternatives for your use case.',
-  },
-  interview: {
-    summary: 'Practice system design questions.',
-    details: 'Prepare for interviews with questions tailored to your architecture.',
-  },
+interface LearningPanelProps {
+  projectId: string
 }
 
-export function LearningPanel() {
-  const [expandedLayer, setExpandedLayer] = useState<string | null>('architecture')
+export function LearningPanel({ projectId }: LearningPanelProps) {
   const selected = useCanvasStore((s) => s.nodes.find((n) => n.selected) ?? null)
   const updateNodeData = useCanvasStore((s) => s.updateNodeData)
   const edges = useCanvasStore((s) => s.edges)
+  const setSelectedNodeId = useLearningStore((s) => s.setSelectedNodeId)
+
   const outbound = selected ? edges.filter((e) => e.source === selected.id).length : 0
   const inbound = selected ? edges.filter((e) => e.target === selected.id).length : 0
+
+  useEffect(() => {
+    setSelectedNodeId(selected?.id ?? null)
+  }, [selected?.id, setSelectedNodeId])
 
   return (
     <div className="flex h-full flex-col">
@@ -70,17 +47,18 @@ export function LearningPanel() {
           <h2 className="text-sm font-semibold">Inspector</h2>
         </div>
         <p className="text-muted-foreground mt-1 text-xs">
-          Properties, AI explanations, and guided learning.
+          Progressive learning, AI mentor, and component properties.
         </p>
+        <LearningModeSelector className="mt-3" />
       </div>
 
-      <Tabs defaultValue="props" className="flex flex-1 flex-col overflow-hidden">
+      <Tabs defaultValue="learn" className="flex flex-1 flex-col overflow-hidden">
         <TabsList className="mx-4 mt-3 grid w-auto grid-cols-3">
           <TabsTrigger value="learn" className="text-xs">
             Learn
           </TabsTrigger>
           <TabsTrigger value="ai" className="text-xs">
-            AI
+            Mentor
           </TabsTrigger>
           <TabsTrigger value="props" className="text-xs">
             Properties
@@ -88,82 +66,30 @@ export function LearningPanel() {
         </TabsList>
 
         <TabsContent value="learn" className="flex-1 overflow-y-auto px-4 pb-4">
-          <div className="mt-2 space-y-1">
-            {LEARNING_LAYERS.map((layer, index) => {
-              const isExpanded = expandedLayer === layer.id
-              const content = layerContent[layer.id]
-
-              return (
-                <motion.div key={layer.id} initial={false}>
-                  <button
-                    type="button"
-                    onClick={() => setExpandedLayer(isExpanded ? null : layer.id)}
-                    className={cn(
-                      'hover:bg-accent flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left transition-colors',
-                      isExpanded && 'bg-accent',
-                    )}
-                    aria-expanded={isExpanded}
-                  >
-                    <span
-                      className={cn(
-                        'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold',
-                        isExpanded ? 'btn-brand shadow-none' : 'bg-muted text-muted-foreground',
-                      )}
-                    >
-                      {index + 1}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">{layer.label}</p>
-                      {!isExpanded && (
-                        <p className="text-muted-foreground truncate text-xs">
-                          {layer.description}
-                        </p>
-                      )}
-                    </div>
-                    <ChevronDown
-                      className={cn(
-                        'text-muted-foreground h-4 w-4 shrink-0 transition-transform',
-                        isExpanded && 'rotate-180',
-                      )}
-                    />
-                  </button>
-
-                  {isExpanded && content && (
-                    <div className="px-3 pb-3 pl-10">
-                      <p className="text-sm font-medium">{content.summary}</p>
-                      <p className="text-muted-foreground mt-2 text-xs leading-relaxed">
-                        {content.details}
-                      </p>
-                    </div>
-                  )}
-                </motion.div>
-              )
-            })}
-          </div>
+          {selected ? (
+            <div className="mt-2">
+              <p className="text-muted-foreground mb-2 text-xs">
+                Learning about{' '}
+                <span className="text-foreground font-medium">{selected.data.label}</span>
+              </p>
+              <DependencyExplorer projectId={projectId} nodeId={selected.id} />
+              <ProgressiveLearningLayers projectId={projectId} nodeId={selected.id} />
+              <DecisionLogPanel projectId={projectId} nodeId={selected.id} />
+            </div>
+          ) : (
+            <p className="text-muted-foreground mt-4 text-center text-xs">
+              Select a component on the canvas to begin progressive learning.
+            </p>
+          )}
         </TabsContent>
 
-        <TabsContent value="ai" className="flex-1 overflow-y-auto px-4 pb-4">
-          <div className="bg-muted/50 mt-2 rounded-lg p-4">
-            <div className="flex items-start gap-2">
-              <MessageSquare className="text-primary mt-0.5 h-4 w-4 shrink-0" />
-              <div>
-                <p className="text-sm font-medium">AI Explanation</p>
-                <p className="text-muted-foreground mt-2 text-xs leading-relaxed">
-                  {selected
-                    ? (selected.data.description ??
-                      `${selected.data.label} is a ${selected.data.category} component${
-                        selected.data.technology ? ` built with ${selected.data.technology}` : ''
-                      }. It connects to ${outbound} downstream and ${inbound} upstream services.`)
-                    : 'Select a component on the canvas for contextual AI explanations.'}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="mt-3 flex items-center gap-2">
-            <Lightbulb className="text-warning h-4 w-4" aria-hidden />
-            <span className="text-muted-foreground text-xs">
-              Explanations update as you edit the diagram.
-            </span>
+        <TabsContent value="ai" className="flex flex-1 flex-col overflow-hidden px-4 pb-4">
+          <div className="mt-2 min-h-0 flex-1">
+            <MentorChatPanel
+              projectId={projectId}
+              nodeId={selected?.id ?? null}
+              nodeLabel={selected?.data.label}
+            />
           </div>
         </TabsContent>
 

@@ -33,6 +33,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,8 +49,8 @@ public class ArchitectureOrchestratorServiceImpl implements ArchitectureOrchestr
     private final ArchitectureGenerationRepository generationRepository;
     private final ArchitectureValidator architectureValidator;
     private final ObjectMapper objectMapper;
-    private final ArchitectureGenerationRunner generationRunner;
     private final ArchitectureGenerationEngine generationEngine;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ArchitectureOrchestratorServiceImpl(
             AiGatewayService aiGatewayService,
@@ -57,15 +58,15 @@ public class ArchitectureOrchestratorServiceImpl implements ArchitectureOrchestr
             ArchitectureGenerationRepository generationRepository,
             ArchitectureValidator architectureValidator,
             ObjectMapper objectMapper,
-            ArchitectureGenerationRunner generationRunner,
-            ArchitectureGenerationEngine generationEngine) {
+            ArchitectureGenerationEngine generationEngine,
+            ApplicationEventPublisher eventPublisher) {
         this.aiGatewayService = aiGatewayService;
         this.generatorLookup = generatorLookup;
         this.generationRepository = generationRepository;
         this.architectureValidator = architectureValidator;
         this.objectMapper = objectMapper;
-        this.generationRunner = generationRunner;
         this.generationEngine = generationEngine;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -91,10 +92,10 @@ public class ArchitectureOrchestratorServiceImpl implements ArchitectureOrchestr
         generation.setSystemDescription(request.systemDescription());
         generation.setSystemType(request.systemType());
         generation.setProgressPercent(0);
-        generation.setCurrentStep("initializing");
+        generation.setCurrentStep("queued");
         generation = generationRepository.save(generation);
 
-        generationRunner.runGeneration(generation.getId(), request.useCache());
+        eventPublisher.publishEvent(new GenerationStartedEvent(generation.getId(), request.useCache()));
 
         return toStatusResponse(generation, null);
     }

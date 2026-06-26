@@ -24,7 +24,14 @@ public class OpenAiProviderClient extends AbstractHttpProviderClient {
     @Override
     protected String resolveBaseUrl() {
         String baseUrl = config().getBaseUrl();
-        return baseUrl.isBlank() ? "https://api.openai.com/v1" : baseUrl;
+        if (baseUrl == null || baseUrl.isBlank()) {
+            return "https://api.openai.com/v1";
+        }
+        String normalized = baseUrl.trim().replaceAll("/+$", "");
+        if (normalized.equals("https://api.openai.com")) {
+            return "https://api.openai.com/v1";
+        }
+        return normalized;
     }
 
     @Override
@@ -53,7 +60,9 @@ public class OpenAiProviderClient extends AbstractHttpProviderClient {
     protected HttpHeaders buildHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(config().getApiKey());
+        if (config().hasApiKey()) {
+            headers.setBearerAuth(config().getApiKey());
+        }
         return headers;
     }
 

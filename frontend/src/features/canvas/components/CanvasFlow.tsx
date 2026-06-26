@@ -18,6 +18,7 @@ import { EmptyCanvasGuide } from '@/features/canvas/components/EmptyCanvasGuide'
 import { GenerationProgress } from '@/features/canvas/components/GenerationProgress'
 import { useCanvasStore } from '@/features/canvas/stores/canvas-store'
 import { useCanvasUiStore } from '@/features/canvas/stores/canvas-ui-store'
+import { useLearningStore } from '@/features/learning/stores/learning-store'
 import type { BlueprintEdge, BlueprintNode } from '@/features/canvas/types/diagram'
 import {
   ContextMenu,
@@ -28,10 +29,11 @@ import {
 } from '@/shared/ui'
 
 interface CanvasFlowProps {
-  onGenerate: () => void
+  projectId: string
+  defaultPrompt?: string
 }
 
-export function CanvasFlow({ onGenerate }: CanvasFlowProps) {
+export function CanvasFlow({ projectId, defaultPrompt }: CanvasFlowProps) {
   const nodes = useCanvasStore((s) => s.nodes)
   const edges = useCanvasStore((s) => s.edges)
   const onNodesChange = useCanvasStore((s) => s.onNodesChange)
@@ -46,6 +48,7 @@ export function CanvasFlow({ onGenerate }: CanvasFlowProps) {
 
   const setCursorFlowPos = useCanvasUiStore((s) => s.setCursorFlowPos)
   const setZoom = useCanvasUiStore((s) => s.setZoom)
+  const highlightedNodeIds = useLearningStore((s) => s.highlightedNodeIds)
 
   const { screenToFlowPosition, fitView } = useReactFlow()
   const didFitRef = useRef(false)
@@ -101,89 +104,103 @@ export function CanvasFlow({ onGenerate }: CanvasFlowProps) {
 
   const defaultEdgeOptions = useMemo(() => ({ type: 'blueprint', animated: true }), [])
 
+  const displayNodes = useMemo(() => {
+    if (highlightedNodeIds.length === 0) return nodes
+    return nodes.map((n) => ({
+      ...n,
+      style: {
+        ...n.style,
+        opacity: highlightedNodeIds.includes(n.id) ? 1 : 0.35,
+        transition: 'opacity 0.2s ease',
+      },
+    }))
+  }, [nodes, highlightedNodeIds])
+
   const isEmpty = nodes.length === 0
 
   return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>
-        <div className="relative h-full w-full" onDragOver={onDragOver} onDrop={onDrop}>
-          <ReactFlow<BlueprintNode, BlueprintEdge>
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            onMove={onMove}
-            onPaneMouseMove={onPaneMouseMove}
-            nodeTypes={nodeTypes}
-            edgeTypes={edgeTypes}
-            defaultEdgeOptions={defaultEdgeOptions}
-            connectionMode={ConnectionMode.Loose}
-            selectionMode={SelectionMode.Partial}
-            snapToGrid
-            snapGrid={SNAP_GRID}
-            panOnScroll
-            zoomOnScroll
-            zoomOnPinch
-            minZoom={0.1}
-            maxZoom={2}
-            deleteKeyCode={['Backspace', 'Delete']}
-            multiSelectionKeyCode="Shift"
-            className="canvas-grid"
-            proOptions={{ hideAttribution: true }}
+    <div className="relative h-full w-full">
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <div className="h-full w-full" onDragOver={onDragOver} onDrop={onDrop}>
+            <ReactFlow<BlueprintNode, BlueprintEdge>
+              nodes={displayNodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={onConnect}
+              onMove={onMove}
+              onPaneMouseMove={onPaneMouseMove}
+              nodeTypes={nodeTypes}
+              edgeTypes={edgeTypes}
+              defaultEdgeOptions={defaultEdgeOptions}
+              connectionMode={ConnectionMode.Loose}
+              selectionMode={SelectionMode.Partial}
+              snapToGrid
+              snapGrid={SNAP_GRID}
+              panOnScroll
+              zoomOnScroll
+              zoomOnPinch
+              minZoom={0.1}
+              maxZoom={2}
+              deleteKeyCode={['Backspace', 'Delete']}
+              multiSelectionKeyCode="Shift"
+              className="canvas-grid"
+              proOptions={{ hideAttribution: true }}
+            >
+              <Background
+                variant={BackgroundVariant.Dots}
+                gap={20}
+                size={1}
+                color="var(--color-canvas-grid)"
+              />
+              <MiniMap
+                className="!bg-card !border-border !shadow-[var(--shadow-elevation-2)]"
+                nodeColor={(n) => {
+                  const category = (n.data as BlueprintNode['data'])?.category
+                  return category === 'database'
+                    ? 'var(--node-database-border)'
+                    : 'var(--color-primary)'
+                }}
+                pannable
+                zoomable
+              />
+              <svg className="pointer-events-none absolute h-0 w-0">
+                <defs>
+                  <marker
+                    id="blueprint-arrow"
+                    markerWidth="12"
+                    markerHeight="12"
+                    refX="10"
+                    refY="6"
+                    orient="auto"
+                  >
+                    <path d="M0,0 L12,6 L0,12 Z" fill="var(--color-border)" />
+                  </marker>
+                </defs>
+              </svg>
+            </ReactFlow>
+          </div>
+        </ContextMenuTrigger>
+
+        <ContextMenuContent>
+          <ContextMenuItem onClick={copySelected}>Copy</ContextMenuItem>
+          <ContextMenuItem onClick={paste}>Paste</ContextMenuItem>
+          <ContextMenuItem onClick={duplicateSelected}>Duplicate</ContextMenuItem>
+          <ContextMenuSeparator />
+          <ContextMenuItem onClick={autoArrange}>Auto arrange</ContextMenuItem>
+          <ContextMenuSeparator />
+          <ContextMenuItem
+            className="text-destructive focus:text-destructive"
+            onClick={deleteSelected}
           >
-            <Background
-              variant={BackgroundVariant.Dots}
-              gap={20}
-              size={1}
-              color="var(--color-canvas-grid)"
-            />
-            <MiniMap
-              className="!bg-card !border-border !shadow-[var(--shadow-elevation-2)]"
-              nodeColor={(n) => {
-                const category = (n.data as BlueprintNode['data'])?.category
-                return category === 'database'
-                  ? 'var(--node-database-border)'
-                  : 'var(--color-primary)'
-              }}
-              pannable
-              zoomable
-            />
-            <svg className="pointer-events-none absolute h-0 w-0">
-              <defs>
-                <marker
-                  id="blueprint-arrow"
-                  markerWidth="12"
-                  markerHeight="12"
-                  refX="10"
-                  refY="6"
-                  orient="auto"
-                >
-                  <path d="M0,0 L12,6 L0,12 Z" fill="var(--color-border)" />
-                </marker>
-              </defs>
-            </svg>
-          </ReactFlow>
+            Delete
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
 
-          <GenerationProgress />
-          {isEmpty && <EmptyCanvasGuide onGenerate={onGenerate} />}
-        </div>
-      </ContextMenuTrigger>
-
-      <ContextMenuContent>
-        <ContextMenuItem onClick={copySelected}>Copy</ContextMenuItem>
-        <ContextMenuItem onClick={paste}>Paste</ContextMenuItem>
-        <ContextMenuItem onClick={duplicateSelected}>Duplicate</ContextMenuItem>
-        <ContextMenuSeparator />
-        <ContextMenuItem onClick={autoArrange}>Auto arrange</ContextMenuItem>
-        <ContextMenuSeparator />
-        <ContextMenuItem
-          className="text-destructive focus:text-destructive"
-          onClick={deleteSelected}
-        >
-          Delete
-        </ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
+      <GenerationProgress />
+      {isEmpty && <EmptyCanvasGuide projectId={projectId} defaultPrompt={defaultPrompt} />}
+    </div>
   )
 }

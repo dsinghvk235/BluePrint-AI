@@ -70,7 +70,7 @@ abstract class AbstractHttpProviderClient implements AiProviderClient {
                 calculateCost(inputTokens, outputTokens));
     }
 
-    private BigDecimal calculateCost(int inputTokens, int outputTokens) {
+    protected BigDecimal calculateCost(int inputTokens, int outputTokens) {
         AiGatewayProperties.ProviderConfig cfg = config();
         if (cfg == null) {
             return BigDecimal.ZERO;

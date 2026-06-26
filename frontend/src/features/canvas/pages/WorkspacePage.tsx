@@ -13,6 +13,7 @@ import { LearningPanel } from '@/features/canvas/components/LearningPanel'
 import { WorkspaceLeftPanel } from '@/features/canvas/components/WorkspaceLeftPanel'
 import { LEFT_PANEL_TABS } from '@/features/canvas/constants'
 import { recoverFromLocalStorage, useAutosave } from '@/features/canvas/hooks/use-autosave'
+import { stopGenerationPolling } from '@/features/canvas/hooks/generation-polling'
 import { useCanvasKeyboard } from '@/features/canvas/hooks/use-canvas-keyboard'
 import { useDiagram } from '@/features/canvas/hooks/use-diagram'
 import { useCanvasStore } from '@/features/canvas/stores/canvas-store'
@@ -33,7 +34,8 @@ function WorkspaceCanvasInner() {
   const setLeftTab = useCanvasUiStore((s) => s.setLeftTab)
   const toggleLeft = useCanvasUiStore((s) => s.toggleLeft)
   const toggleRight = useCanvasUiStore((s) => s.toggleRight)
-  const setGenerateOpen = useCanvasUiStore((s) => s.setGenerateDialogOpen)
+  const setGenerating = useCanvasUiStore((s) => s.setGenerating)
+  const setGenerationError = useCanvasUiStore((s) => s.setGenerationError)
 
   const loadSnapshot = useCanvasStore((s) => s.loadSnapshot)
   const setDiagramVersion = useCanvasStore((s) => s.setDiagramVersion)
@@ -52,7 +54,10 @@ function WorkspaceCanvasInner() {
 
   useEffect(() => {
     hydratedProjectRef.current = null
-  }, [projectId])
+    setGenerating(false)
+    setGenerationError(null)
+    stopGenerationPolling()
+  }, [projectId, setGenerating, setGenerationError])
 
   useEffect(() => {
     if (!projectId || !diagram) return
@@ -91,7 +96,6 @@ function WorkspaceCanvasInner() {
   }, [projectId])
 
   const handleFitView = useCallback(() => fitView({ padding: 0.2 }), [fitView])
-  const handleGenerate = useCallback(() => setGenerateOpen(true), [setGenerateOpen])
 
   useCanvasKeyboard({ onFitView: handleFitView })
 
@@ -144,7 +148,7 @@ function WorkspaceCanvasInner() {
           )}
 
           <div className="relative min-w-0 flex-1">
-            <CanvasFlow onGenerate={handleGenerate} />
+            <CanvasFlow projectId={projectId!} defaultPrompt={project?.prompt ?? ''} />
 
             <Button
               variant="outline"
@@ -171,7 +175,7 @@ function WorkspaceCanvasInner() {
               className="border-border bg-sidebar flex w-[var(--panel-width)] shrink-0 flex-col border-l max-xl:absolute max-xl:right-0 max-xl:z-20 max-xl:h-[calc(100%-var(--toolbar-height)-var(--statusbar-height))] max-xl:shadow-lg"
               aria-label="Inspector panel"
             >
-              <LearningPanel />
+              <LearningPanel projectId={projectId!} />
             </aside>
           )}
         </div>

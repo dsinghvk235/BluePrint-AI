@@ -71,6 +71,7 @@ interface CanvasState {
 
   getSelectedNodes: () => BlueprintNode[]
   getSelectedCount: () => number
+  selectNode: (id: string) => void
 }
 
 let clipboard: { nodes: BlueprintNode[]; edges: BlueprintEdge[] } | null = null
@@ -366,6 +367,12 @@ export const useCanvasStore = create<CanvasState>()(
 
     getSelectedNodes: () => get().nodes.filter((n) => n.selected),
     getSelectedCount: () => get().nodes.filter((n) => n.selected).length,
+
+    selectNode: (id) => {
+      set((state) => ({
+        nodes: state.nodes.map((n) => ({ ...n, selected: n.id === id })),
+      }))
+    },
   })),
 )
 

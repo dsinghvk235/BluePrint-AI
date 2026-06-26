@@ -11,7 +11,7 @@ import {
   Undo2,
   ZoomIn,
 } from 'lucide-react'
-import type { ComponentType } from 'react'
+import type { ComponentType, PointerEvent } from 'react'
 import { Link } from 'react-router-dom'
 
 import { useSaveDiagram } from '@/features/canvas/hooks/use-diagram'
@@ -51,7 +51,6 @@ export function CanvasToolbar({
   const diagramVersion = useCanvasStore((s) => s.diagramVersion)
   const markClean = useCanvasStore((s) => s.markClean)
 
-  const setGenerateOpen = useCanvasUiStore((s) => s.setGenerateDialogOpen)
   const { mutate: save, isPending: isSavePending } = useSaveDiagram(projectId)
 
   function handleSave() {
@@ -103,7 +102,10 @@ export function CanvasToolbar({
             icon={Sparkles}
             label="Generate (AI)"
             primary
-            onClick={() => setGenerateOpen(true)}
+            onPointerDown={(e) => {
+              e.preventDefault()
+              useCanvasUiStore.getState().openGenerateDialog()
+            }}
           />
           <ToolbarButton icon={Search} label="Search" disabled />
           <ToolbarButton
@@ -150,9 +152,17 @@ interface ToolbarButtonProps {
   primary?: boolean
   disabled?: boolean
   onClick?: () => void
+  onPointerDown?: (e: PointerEvent<HTMLButtonElement>) => void
 }
 
-function ToolbarButton({ icon: Icon, label, primary, disabled, onClick }: ToolbarButtonProps) {
+function ToolbarButton({
+  icon: Icon,
+  label,
+  primary,
+  disabled,
+  onClick,
+  onPointerDown,
+}: ToolbarButtonProps) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -161,6 +171,7 @@ function ToolbarButton({ icon: Icon, label, primary, disabled, onClick }: Toolba
           size="icon"
           className={cn('h-8 w-8', disabled && 'opacity-40')}
           onClick={onClick}
+          onPointerDown={onPointerDown}
           disabled={disabled}
           aria-label={label}
         >
