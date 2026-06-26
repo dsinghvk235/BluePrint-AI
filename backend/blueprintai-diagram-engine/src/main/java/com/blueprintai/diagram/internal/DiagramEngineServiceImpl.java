@@ -8,6 +8,12 @@ public class DiagramEngineServiceImpl implements DiagramEngineService {
 
     private static final String MODULE_NAME = "diagram-engine";
 
+    private final DiagramServiceImpl diagramService;
+
+    public DiagramEngineServiceImpl(DiagramServiceImpl diagramService) {
+        this.diagramService = diagramService;
+    }
+
     @Override
     public String getModuleName() {
         return MODULE_NAME;
@@ -15,6 +21,6 @@ public class DiagramEngineServiceImpl implements DiagramEngineService {
 
     @Override
     public boolean isReady() {
-        return false;
+        return diagramService.isReady();
     }
 }

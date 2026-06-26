@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { BookOpen, ChevronDown, Lightbulb, MessageSquare } from 'lucide-react'
 import { useState } from 'react'
 
+import { useCanvasStore } from '@/features/canvas/stores/canvas-store'
 import { LEARNING_LAYERS } from '@/shared/constants'
 import {
   Accordion,
@@ -9,67 +10,71 @@ import {
   AccordionItem,
   AccordionTrigger,
   Badge,
+  Input,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
+  Textarea,
 } from '@/shared/ui'
 import { cn } from '@/shared/utils'
 
 const layerContent: Record<string, { summary: string; details: string }> = {
   architecture: {
-    summary: 'A microservices architecture with API gateway pattern.',
+    summary: 'System overview — components and how they connect.',
     details:
-      'The system uses an API Gateway as the single entry point, routing requests to specialized services. Auth and User services handle identity and profile management, with a shared PostgreSQL database for persistence.',
+      'Select a node on the canvas to see component-level explanations. The learning panel reveals architecture progressively so you are never overwhelmed.',
   },
   component: {
-    summary: 'API Gateway — routes and authenticates incoming requests.',
+    summary: 'Component-level detail for the selected node.',
     details:
-      'The API Gateway terminates TLS, validates JWT tokens, applies rate limiting, and routes requests to downstream services. It implements the Backend for Frontend (BFF) pattern for client-specific aggregations.',
+      'Inspect responsibilities, protocols, and connections for each service in your diagram.',
   },
   why: {
-    summary: 'Decouples clients from internal service topology.',
+    summary: 'Design rationale behind each choice.',
     details:
-      'Without a gateway, clients would need to know every service endpoint. The gateway provides a stable API surface while allowing internal services to evolve independently.',
+      'Understand why each component exists and what problem it solves in the overall system.',
   },
   principle: {
-    summary: 'Single Responsibility & Separation of Concerns',
-    details:
-      'Each service owns a bounded context. The gateway handles cross-cutting concerns (auth, routing, rate limiting) so domain services stay focused on business logic.',
+    summary: 'Engineering principles applied.',
+    details: 'Patterns like separation of concerns, single responsibility, and loose coupling.',
   },
   tradeoffs: {
-    summary: 'Added latency vs. simplified client integration',
+    summary: 'Costs and benefits of this approach.',
     details:
-      'Pros: Centralized auth, easier client SDKs, service discovery abstraction. Cons: Single point of failure (mitigated by HA deployment), additional network hop adds ~5-15ms latency.',
+      'Every architecture involves trade-offs. Review latency, complexity, and operational costs.',
   },
   alternatives: {
-    summary: 'Service mesh, direct client-to-service, monolith',
-    details:
-      'A service mesh (Istio/Linkerd) handles routing at the infrastructure layer. Direct calls reduce latency but increase client complexity. A monolith simplifies early development but limits independent scaling.',
+    summary: 'Other viable design options.',
+    details: 'Compare service mesh, monolith, and serverless alternatives for your use case.',
   },
   interview: {
-    summary: 'Common system design questions for this pattern',
-    details:
-      '1. How would you handle gateway failure? 2. When would you choose a service mesh over an API gateway? 3. How do you prevent the gateway from becoming a bottleneck? 4. Design rate limiting for 1M RPS.',
+    summary: 'Practice system design questions.',
+    details: 'Prepare for interviews with questions tailored to your architecture.',
   },
 }
 
 export function LearningPanel() {
   const [expandedLayer, setExpandedLayer] = useState<string | null>('architecture')
+  const selected = useCanvasStore((s) => s.nodes.find((n) => n.selected) ?? null)
+  const updateNodeData = useCanvasStore((s) => s.updateNodeData)
+  const edges = useCanvasStore((s) => s.edges)
+  const outbound = selected ? edges.filter((e) => e.source === selected.id).length : 0
+  const inbound = selected ? edges.filter((e) => e.target === selected.id).length : 0
 
   return (
     <div className="flex h-full flex-col">
       <div className="border-border border-b p-4">
         <div className="flex items-center gap-2">
           <BookOpen className="text-primary h-4 w-4" aria-hidden />
-          <h2 className="text-sm font-semibold">Learning Panel</h2>
+          <h2 className="text-sm font-semibold">Inspector</h2>
         </div>
         <p className="text-muted-foreground mt-1 text-xs">
-          Explore step by step — never overwhelm, always learn.
+          Properties, AI explanations, and guided learning.
         </p>
       </div>
 
-      <Tabs defaultValue="learn" className="flex flex-1 flex-col overflow-hidden">
+      <Tabs defaultValue="props" className="flex flex-1 flex-col overflow-hidden">
         <TabsList className="mx-4 mt-3 grid w-auto grid-cols-3">
           <TabsTrigger value="learn" className="text-xs">
             Learn
@@ -87,14 +92,9 @@ export function LearningPanel() {
             {LEARNING_LAYERS.map((layer, index) => {
               const isExpanded = expandedLayer === layer.id
               const content = layerContent[layer.id]
-              const isAccessible = index === 0 || expandedLayer !== null
 
               return (
-                <motion.div
-                  key={layer.id}
-                  initial={false}
-                  animate={{ opacity: isAccessible ? 1 : 0.5 }}
-                >
+                <motion.div key={layer.id} initial={false}>
                   <button
                     type="button"
                     onClick={() => setExpandedLayer(isExpanded ? null : layer.id)}
@@ -129,27 +129,12 @@ export function LearningPanel() {
                   </button>
 
                   {isExpanded && content && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="px-3 pb-3 pl-10"
-                    >
+                    <div className="px-3 pb-3 pl-10">
                       <p className="text-sm font-medium">{content.summary}</p>
                       <p className="text-muted-foreground mt-2 text-xs leading-relaxed">
                         {content.details}
                       </p>
-                      {index < LEARNING_LAYERS.length - 1 && (
-                        <button
-                          type="button"
-                          onClick={() => setExpandedLayer(LEARNING_LAYERS[index + 1]?.id ?? null)}
-                          className="text-primary mt-3 text-xs font-medium hover:underline"
-                        >
-                          Continue to {LEARNING_LAYERS[index + 1]?.label} →
-                        </button>
-                      )}
-                    </motion.div>
+                    </div>
                   )}
                 </motion.div>
               )
@@ -164,10 +149,12 @@ export function LearningPanel() {
               <div>
                 <p className="text-sm font-medium">AI Explanation</p>
                 <p className="text-muted-foreground mt-2 text-xs leading-relaxed">
-                  The API Gateway pattern is ideal here because Netflix-scale systems need a single
-                  entry point for thousands of microservices. It enables centralized authentication,
-                  request routing, and protocol translation while keeping individual services
-                  independently deployable.
+                  {selected
+                    ? (selected.data.description ??
+                      `${selected.data.label} is a ${selected.data.category} component${
+                        selected.data.technology ? ` built with ${selected.data.technology}` : ''
+                      }. It connects to ${outbound} downstream and ${inbound} upstream services.`)
+                    : 'Select a component on the canvas for contextual AI explanations.'}
                 </p>
               </div>
             </div>
@@ -175,39 +162,77 @@ export function LearningPanel() {
           <div className="mt-3 flex items-center gap-2">
             <Lightbulb className="text-warning h-4 w-4" aria-hidden />
             <span className="text-muted-foreground text-xs">
-              Select a component on the canvas for contextual explanations.
+              Explanations update as you edit the diagram.
             </span>
           </div>
         </TabsContent>
 
         <TabsContent value="props" className="flex-1 overflow-y-auto px-4 pb-4">
-          <Accordion type="single" collapsible defaultValue="details" className="mt-2">
-            <AccordionItem value="details">
-              <AccordionTrigger className="text-sm">Component Details</AccordionTrigger>
-              <AccordionContent>
-                <dl className="space-y-2 text-xs">
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Name</dt>
-                    <dd className="font-medium">API Gateway</dd>
+          {selected ? (
+            <Accordion type="single" collapsible defaultValue="details" className="mt-2">
+              <AccordionItem value="details">
+                <AccordionTrigger className="text-sm">Component Details</AccordionTrigger>
+                <AccordionContent className="space-y-3">
+                  <div>
+                    <label className="text-muted-foreground text-xs">Name</label>
+                    <Input
+                      value={selected.data.label}
+                      onChange={(e) => updateNodeData(selected.id, { label: e.target.value })}
+                      className="mt-1 h-8 text-sm"
+                    />
                   </div>
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Type</dt>
-                    <dd>
-                      <Badge variant="secondary">Service</Badge>
-                    </dd>
+                  <div>
+                    <label className="text-muted-foreground text-xs">Subtitle</label>
+                    <Input
+                      value={selected.data.subtitle ?? ''}
+                      onChange={(e) => updateNodeData(selected.id, { subtitle: e.target.value })}
+                      className="mt-1 h-8 text-sm"
+                    />
                   </div>
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Protocol</dt>
-                    <dd className="font-medium">HTTP/REST</dd>
+                  <div>
+                    <label className="text-muted-foreground text-xs">Technology</label>
+                    <Input
+                      value={selected.data.technology ?? ''}
+                      onChange={(e) => updateNodeData(selected.id, { technology: e.target.value })}
+                      className="mt-1 h-8 text-sm"
+                      placeholder="e.g. PostgreSQL, Redis"
+                    />
                   </div>
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Connections</dt>
-                    <dd className="font-medium">2 outbound</dd>
+                  <div>
+                    <label className="text-muted-foreground text-xs">Description</label>
+                    <Textarea
+                      value={selected.data.description ?? ''}
+                      onChange={(e) => updateNodeData(selected.id, { description: e.target.value })}
+                      className="mt-1 text-sm"
+                      rows={3}
+                    />
                   </div>
-                </dl>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+                  <dl className="space-y-2 text-xs">
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Type</dt>
+                      <dd>
+                        <Badge variant="secondary">{selected.data.category}</Badge>
+                      </dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Status</dt>
+                      <dd className="font-medium capitalize">{selected.data.status}</dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Connections</dt>
+                      <dd className="font-medium">
+                        {inbound} in · {outbound} out
+                      </dd>
+                    </div>
+                  </dl>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          ) : (
+            <p className="text-muted-foreground mt-4 text-center text-xs">
+              Select a node to inspect its properties
+            </p>
+          )}
         </TabsContent>
       </Tabs>
     </div>
