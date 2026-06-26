@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
+import { useRegister } from '@/features/auth/hooks/use-auth'
 import { APP_NAME, ROUTES } from '@/shared/constants'
-import { toast } from '@/shared/stores/toast-store'
 import {
   BrandLogo,
   Button,
@@ -16,11 +16,12 @@ import {
   CardTitle,
   Input,
   Label,
+  Spinner,
 } from '@/shared/ui'
 
 const registerSchema = z
   .object({
-    name: z.string().min(2, 'Name is required'),
+    fullName: z.string().min(2, 'Name is required'),
     email: z.string().email('Enter a valid email'),
     password: z.string().min(8, 'Password must be at least 8 characters'),
     confirmPassword: z.string(),
@@ -33,20 +34,17 @@ const registerSchema = z
 type RegisterForm = z.infer<typeof registerSchema>
 
 export function RegisterPage() {
+  const registerMutation = useRegister()
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
   })
 
-  const onSubmit = () => {
-    toast({
-      title: 'Account created',
-      description: 'Registration arrives in a future phase.',
-      variant: 'success',
-    })
+  const onSubmit = ({ fullName, email, password }: RegisterForm) => {
+    registerMutation.mutate({ fullName, email, password })
   }
 
   return (
@@ -62,9 +60,9 @@ export function RegisterPage() {
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Full name</Label>
-              <Input id="name" placeholder="Jane Engineer" {...register('name')} />
-              {errors.name && <p className="text-error text-xs">{errors.name.message}</p>}
+              <Label htmlFor="fullName">Full name</Label>
+              <Input id="fullName" placeholder="Jane Engineer" {...register('fullName')} />
+              {errors.fullName && <p className="text-error text-xs">{errors.fullName.message}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -83,8 +81,8 @@ export function RegisterPage() {
                 <p className="text-error text-xs">{errors.confirmPassword.message}</p>
               )}
             </div>
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              Create account
+            <Button type="submit" className="w-full" disabled={registerMutation.isPending}>
+              {registerMutation.isPending ? <Spinner className="h-4 w-4" /> : 'Create account'}
             </Button>
           </form>
           <p className="text-muted-foreground mt-4 text-center text-xs">

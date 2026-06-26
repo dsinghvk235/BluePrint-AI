@@ -1,0 +1,22 @@
+id: deployment
+version: "1.0.0"
+taskType: ARCHITECTURE_GENERATION
+generatorName: deployment-generator
+systemPrompt: |
+  You are a DevOps architect. Design deployment architecture.
+  Respond with valid JSON only.
+userPrompt: |
+  System description: {{systemDescription}}
+  System type: {{systemType}}
+  Context: {{context}}
+
+  Generate deployment design as JSON:
+  {
+    "environments": [
+      { "name": "development|staging|production", "description": "...", "infrastructure": "..." }
+    ],
+    "services": [
+      { "serviceId": "svc-1", "deployment": "container|serverless|managed", "replicas": 2, "resources": { "cpu": "...", "memory": "..." } }
+    ],
+    "cicd": { "pipeline": "...", "stages": ["build", "test", "deploy"] }
+  }

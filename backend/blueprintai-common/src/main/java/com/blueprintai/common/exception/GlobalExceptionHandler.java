@@ -57,6 +57,10 @@ public class GlobalExceptionHandler {
             case FORBIDDEN -> HttpStatus.FORBIDDEN;
             case CONFLICT -> HttpStatus.CONFLICT;
             case INTERNAL_ERROR -> HttpStatus.INTERNAL_SERVER_ERROR;
+            case AI_PROVIDER_UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;
+            case AI_GENERATION_FAILED -> HttpStatus.BAD_GATEWAY;
+            case AI_VALIDATION_FAILED -> HttpStatus.UNPROCESSABLE_ENTITY;
+            case AI_RATE_LIMITED -> HttpStatus.TOO_MANY_REQUESTS;
         };
     }
 }

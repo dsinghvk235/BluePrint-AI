@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { ROUTES } from '@/shared/constants'
+import { useAuthDialogStore } from '@/shared/stores/auth-dialog-store'
 import { BrandLogo, Button } from '@/shared/ui'
 import { cn } from '@/shared/utils'
 
@@ -18,11 +19,10 @@ const navLeft = [
   { label: 'FAQ', href: '#faq' },
 ] as const
 
-const navRight = [
+const navRightLinks = [
   { label: 'Dashboard', href: ROUTES.DASHBOARD },
   { label: 'Workspace', href: ROUTES.WORKSPACE },
   { label: 'Projects', href: ROUTES.PROJECTS },
-  { label: 'Contact', href: ROUTES.AUTH.LOGIN },
 ] as const
 
 const socials = [
@@ -46,6 +46,7 @@ function BentoMenuIcon({ className }: { className?: string }) {
 export function FloatingNav() {
   const [open, setOpen] = useState(false)
   const navRef = useRef<HTMLDivElement>(null)
+  const openLogin = useAuthDialogStore((s) => s.openLogin)
 
   const close = useCallback(() => setOpen(false), [])
   const toggle = useCallback(() => setOpen((v) => !v), [])
@@ -130,27 +131,29 @@ export function FloatingNav() {
                     ))}
                   </ul>
                   <ul className="space-y-2">
-                    {navRight.map((item) => (
+                    {navRightLinks.map((item) => (
                       <li key={item.label}>
-                        {item.href.startsWith('/') ? (
-                          <Link
-                            to={item.href}
-                            onClick={close}
-                            className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
-                          >
-                            {item.label}
-                          </Link>
-                        ) : (
-                          <a
-                            href={item.href}
-                            onClick={close}
-                            className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
-                          >
-                            {item.label}
-                          </a>
-                        )}
+                        <Link
+                          to={item.href}
+                          onClick={close}
+                          className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
+                        >
+                          {item.label}
+                        </Link>
                       </li>
                     ))}
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          close()
+                          openLogin()
+                        }}
+                        className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
+                      >
+                        Contact
+                      </button>
+                    </li>
                   </ul>
                 </div>
 
@@ -201,13 +204,14 @@ export function FloatingNav() {
                   <BentoMenuIcon />
                 </button>
 
-                <Link
-                  to={ROUTES.AUTH.LOGIN}
+                <button
+                  type="button"
+                  onClick={openLogin}
                   aria-label="Sign in"
                   className="floating-nav-cta icon-cta mr-0.5 flex h-9 w-9 items-center justify-center justify-self-end rounded-[var(--radius-squircle)] transition-transform hover:scale-[1.03]"
                 >
                   <LogIn className="h-4 w-4" strokeWidth={2} />
-                </Link>
+                </button>
               </motion.div>
             )}
           </AnimatePresence>

@@ -1,4 +1,5 @@
-import { API_BASE_URL, API_TIMEOUT_MS } from '@/shared/constants'
+import { API_BASE_URL, API_TIMEOUT_MS, HTTP_STATUS } from '@/shared/constants'
+import { clearAuthSession, getAccessToken, setAccessToken } from '@/shared/stores/auth-store'
 import type { ApiErrorResponse, ApiResponse } from '@/shared/types'
 
 export class ApiClientError extends Error {
@@ -15,10 +16,32 @@ export class ApiClientError extends Error {
 type RequestOptions = Omit<RequestInit, 'body'> & {
   body?: unknown
   params?: Record<string, string | number | boolean | undefined>
+  skipAuth?: boolean
+}
+
+let refreshPromise: Promise<string | null> | null = null
+
+function resolveApiUrl(path: string): string {
+  if (path.startsWith('http')) {
+    return path
+  }
+
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+
+  if (API_BASE_URL.startsWith('http')) {
+    return `${API_BASE_URL.replace(/\/$/, '')}${normalizedPath}`
+  }
+
+  const base = API_BASE_URL.startsWith('/') ? API_BASE_URL : `/${API_BASE_URL}`
+  if (typeof window !== 'undefined') {
+    return `${window.location.origin}${base.replace(/\/$/, '')}${normalizedPath}`
+  }
+
+  return `${base.replace(/\/$/, '')}${normalizedPath}`
 }
 
 function buildUrl(path: string, params?: RequestOptions['params']): string {
-  const url = new URL(path.startsWith('http') ? path : `${API_BASE_URL}${path}`)
+  const url = new URL(resolveApiUrl(path))
 
   if (params) {
     for (const [key, value] of Object.entries(params)) {
@@ -52,28 +75,79 @@ async function parseResponse<T>(response: Response): Promise<T> {
   return 'data' in (payload as ApiResponse<T>) ? (payload as ApiResponse<T>).data : (payload as T)
 }
 
+async function refreshAccessToken(): Promise<string | null> {
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      try {
+        const response = await fetch(resolveApiUrl('/auth/refresh'), {
+          method: 'POST',
+          credentials: 'include',
+          headers: { Accept: 'application/json' },
+        })
+
+        if (!response.ok) {
+          clearAuthSession()
+          return null
+        }
+
+        const payload = (await response.json()) as ApiResponse<{
+          accessToken: string
+        }>
+        const token = payload.data.accessToken
+        setAccessToken(token)
+        return token
+      } catch {
+        clearAuthSession()
+        return null
+      } finally {
+        refreshPromise = null
+      }
+    })()
+  }
+
+  return refreshPromise
+}
+
 /**
  * Central HTTP client for all API communication.
- * Ready for TanStack Query caching, auth headers, and retry logic in future phases.
+ * Injects JWT access tokens and automatically refreshes on 401.
  */
 export async function apiClient<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { body, params, headers, ...rest } = options
+  const { body, params, headers, skipAuth = false, ...rest } = options
 
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS)
 
-  try {
-    const response = await fetch(buildUrl(path, params), {
+  const makeRequest = async (token: string | null) => {
+    const authHeaders: Record<string, string> = {}
+    if (!skipAuth && token) {
+      authHeaders.Authorization = `Bearer ${token}`
+    }
+
+    return fetch(buildUrl(path, params), {
       ...rest,
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
+        ...authHeaders,
         ...headers,
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
       signal: controller.signal,
       credentials: 'include',
     })
+  }
+
+  try {
+    const token = skipAuth ? null : getAccessToken()
+    let response = await makeRequest(token)
+
+    if (response.status === HTTP_STATUS.UNAUTHORIZED && !skipAuth) {
+      const newToken = await refreshAccessToken()
+      if (newToken) {
+        response = await makeRequest(newToken)
+      }
+    }
 
     return parseResponse<T>(response)
   } finally {

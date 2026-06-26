@@ -19,6 +19,7 @@ export const ROUTES = {
   AUTH: {
     LOGIN: '/auth/login',
     REGISTER: '/auth/register',
+    FORGOT_PASSWORD: '/auth/forgot-password',
   },
   NOT_FOUND: '*',
 } as const

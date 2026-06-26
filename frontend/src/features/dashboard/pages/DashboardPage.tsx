@@ -9,8 +9,11 @@ import {
   Sparkles,
   TrendingUp,
 } from 'lucide-react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import { CreateProjectDialog } from '@/features/projects/components/CreateProjectDialog'
+import { useRecentProjects } from '@/features/projects/hooks/use-projects'
 import { ROUTES } from '@/shared/constants'
 import {
   Badge,
@@ -20,14 +23,9 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  Input,
+  Skeleton,
 } from '@/shared/ui'
-
-const recentProjects = [
-  { name: 'Netflix Architecture', updated: '2 hours ago', progress: 75 },
-  { name: 'Uber Ride Matching', updated: 'Yesterday', progress: 45 },
-  { name: 'Smart Hospital System', updated: '3 days ago', progress: 90 },
-] as const
+import { formatRelativeTime } from '@/shared/utils/format-relative-time'
 
 const templates = [
   { name: 'E-commerce Platform', category: 'Retail', nodes: 12 },
@@ -49,6 +47,9 @@ const aiSuggestions = [
 ] as const
 
 export function DashboardPage() {
+  const [createOpen, setCreateOpen] = useState(false)
+  const { data: recentProjects, isLoading } = useRecentProjects(5)
+
   return (
     <div className="mx-auto max-w-[var(--content-max)] px-5 py-8 sm:px-8">
       <motion.div
@@ -63,24 +64,16 @@ export function DashboardPage() {
               Welcome back. Continue where you left off.
             </p>
           </div>
-          <div className="flex gap-2">
-            <div className="relative flex-1 sm:w-64">
-              <Input placeholder="Search projects…" className="pr-8" aria-label="Search projects" />
-            </div>
-            <Button asChild>
-              <Link to={ROUTES.WORKSPACE}>
-                <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">New project</span>
-              </Link>
-            </Button>
-          </div>
+          <Button onClick={() => setCreateOpen(true)}>
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">New project</span>
+          </Button>
         </div>
 
-        {/* Quick Actions */}
         <div className="mt-8 flex flex-wrap gap-2">
           {[
             { label: 'Open Workspace', to: ROUTES.WORKSPACE, icon: Sparkles },
-            { label: 'Browse Templates', to: ROUTES.PROJECTS, icon: LayoutTemplate },
+            { label: 'Browse Projects', to: ROUTES.PROJECTS, icon: LayoutTemplate },
             { label: 'Continue Learning', to: ROUTES.WORKSPACE, icon: BookOpen },
           ].map((action) => (
             <Button key={action.label} variant="outline" size="sm" asChild>
@@ -93,7 +86,6 @@ export function DashboardPage() {
         </div>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-3">
-          {/* Recent Projects */}
           <div className="lg:col-span-2">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="flex items-center gap-2 text-sm font-semibold">
@@ -105,49 +97,59 @@ export function DashboardPage() {
               </Button>
             </div>
             <div className="space-y-3">
-              {recentProjects.map((project, index) => (
-                <motion.div
-                  key={project.name}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <Card className="transition-shadow hover:shadow-[var(--shadow-card-hover)]">
-                    <CardContent className="flex items-center gap-4 p-4">
-                      <div className="bg-primary-muted flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
-                        <Sparkles className="text-primary h-5 w-5" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{project.name}</p>
-                        <p className="text-muted-foreground flex items-center gap-1 text-xs">
-                          <Clock className="h-3 w-3" />
-                          {project.updated}
-                        </p>
-                      </div>
-                      <div className="hidden items-center gap-3 sm:flex">
-                        <div className="text-right">
-                          <p className="text-xs font-medium">{project.progress}%</p>
-                          <div className="bg-muted mt-1 h-1.5 w-20 overflow-hidden rounded-full">
-                            <div
-                              className="bg-primary h-full rounded-full transition-all"
-                              style={{ width: `${project.progress}%` }}
-                            />
-                          </div>
+              {isLoading ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-20 rounded-xl" />
+                ))
+              ) : recentProjects && recentProjects.length > 0 ? (
+                recentProjects.map((project, index) => (
+                  <motion.div
+                    key={project.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    <Card className="transition-shadow hover:shadow-[var(--shadow-card-hover)]">
+                      <CardContent className="flex items-center gap-4 p-4">
+                        <div className="bg-primary-muted flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
+                          <Sparkles className="text-primary h-5 w-5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">{project.name}</p>
+                          <p className="text-muted-foreground flex items-center gap-1 text-xs">
+                            <Clock className="h-3 w-3" />
+                            {formatRelativeTime(project.lastOpened ?? project.updatedAt)}
+                          </p>
                         </div>
                         <Button variant="ghost" size="icon" asChild>
-                          <Link to={ROUTES.WORKSPACE} aria-label={`Open ${project.name}`}>
+                          <Link
+                            to={ROUTES.WORKSPACE_PROJECT.replace(':projectId', project.id)}
+                            aria-label={`Open ${project.name}`}
+                          >
                             <ArrowRight className="h-4 w-4" />
                           </Link>
                         </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))
+              ) : (
+                <Card>
+                  <CardContent className="text-muted-foreground p-6 text-center text-sm">
+                    No projects yet.{' '}
+                    <button
+                      type="button"
+                      className="text-[var(--color-brand)] hover:underline"
+                      onClick={() => setCreateOpen(true)}
+                    >
+                      Create your first project
+                    </button>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
 
-          {/* AI Suggestions */}
           <div>
             <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold">
               <TrendingUp className="h-4 w-4" aria-hidden />
@@ -170,7 +172,6 @@ export function DashboardPage() {
         </div>
 
         <div className="mt-8 grid gap-6 md:grid-cols-2">
-          {/* Templates */}
           <div>
             <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold">
               <LayoutTemplate className="h-4 w-4" aria-hidden />
@@ -196,7 +197,6 @@ export function DashboardPage() {
             </div>
           </div>
 
-          {/* Continue Learning */}
           <div>
             <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold">
               <BookOpen className="h-4 w-4" aria-hidden />
@@ -223,6 +223,8 @@ export function DashboardPage() {
           </div>
         </div>
       </motion.div>
+
+      <CreateProjectDialog open={createOpen} onOpenChange={setCreateOpen} />
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 
+import { AuthInitializer } from './AuthInitializer'
 import { QueryProvider } from './QueryProvider'
 import { ThemeProvider } from './ThemeProvider'
 import { Toaster, TooltipProvider } from '@/shared/ui'
@@ -13,8 +14,10 @@ export function AppProviders({ children }: AppProvidersProps) {
     <QueryProvider>
       <ThemeProvider>
         <TooltipProvider delayDuration={300}>
-          {children}
-          <Toaster />
+          <AuthInitializer>
+            {children}
+            <Toaster />
+          </AuthInitializer>
         </TooltipProvider>
       </ThemeProvider>
     </QueryProvider>

@@ -1,0 +1,17 @@
+id: assumptions
+version: "1.0.0"
+taskType: ARCHITECTURE_GENERATION
+generatorName: assumptions-generator
+systemPrompt: |
+  You are a senior software architect. Identify assumptions and risks.
+  Respond with valid JSON only.
+userPrompt: |
+  System description: {{systemDescription}}
+  System type: {{systemType}}
+  Context: {{context}}
+
+  Generate as JSON:
+  {
+    "assumptions": [{ "id": "A-001", "description": "...", "riskLevel": "LOW|MEDIUM|HIGH" }],
+    "risks": [{ "id": "R-001", "description": "...", "mitigation": "..." }]
+  }

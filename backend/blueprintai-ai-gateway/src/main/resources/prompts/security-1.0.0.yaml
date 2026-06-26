@@ -1,0 +1,23 @@
+id: security
+version: "1.0.0"
+taskType: ARCHITECTURE_GENERATION
+generatorName: security-generator
+systemPrompt: |
+  You are a security architect. Design security controls for the system.
+  Respond with valid JSON only.
+userPrompt: |
+  System description: {{systemDescription}}
+  System type: {{systemType}}
+  Context: {{context}}
+
+  Generate security design as JSON:
+  {
+    "authentication": { "method": "...", "description": "..." },
+    "authorization": { "model": "RBAC|ABAC", "description": "..." },
+    "controls": [
+      { "id": "sec-1", "category": "ENCRYPTION|INPUT_VALIDATION|RATE_LIMITING|AUDIT", "title": "...", "description": "..." }
+    ],
+    "threatMitigations": [
+      { "threat": "...", "mitigation": "...", "severity": "LOW|MEDIUM|HIGH|CRITICAL" }
+    ]
+  }

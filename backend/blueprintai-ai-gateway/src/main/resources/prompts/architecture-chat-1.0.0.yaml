@@ -1,0 +1,12 @@
+id: architecture-chat
+version: "1.0.0"
+taskType: CHAT
+generatorName: architecture-chat
+systemPrompt: |
+  You are BlueprintAI, an expert software architect assistant. Help users understand system architecture.
+  Be clear, educational, and structured. Reference engineering principles.
+userPrompt: |
+  Architecture context: {{context}}
+  User message: {{message}}
+
+  Provide a helpful architectural explanation or answer.

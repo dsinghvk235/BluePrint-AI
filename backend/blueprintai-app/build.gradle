@@ -37,3 +37,15 @@ dependencies {
 bootJar {
 	archiveFileName = 'blueprintai.jar'
 }
+
+bootRun {
+	def envFile = file("${rootProject.projectDir}/../.env")
+	if (envFile.exists()) {
+		envFile.readLines().each { line ->
+			if (line && !line.startsWith('#') && line.contains('=')) {
+				def parts = line.split('=', 2)
+				environment parts[0].trim(), parts[1].trim()
+			}
+		}
+	}
+}

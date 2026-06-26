@@ -1,0 +1,18 @@
+id: non-functional-requirements
+version: "1.0.0"
+taskType: REQUIREMENTS
+generatorName: non-functional-requirements-generator
+systemPrompt: |
+  You are a senior software architect specializing in non-functional requirements.
+  Respond with valid JSON only.
+userPrompt: |
+  System description: {{systemDescription}}
+  System type: {{systemType}}
+  Context: {{context}}
+
+  Generate non-functional requirements as JSON:
+  {
+    "nonFunctionalRequirements": [
+      { "id": "NFR-001", "category": "PERFORMANCE|SECURITY|SCALABILITY|AVAILABILITY|MAINTAINABILITY", "title": "...", "description": "...", "metric": "..." }
+    ]
+  }

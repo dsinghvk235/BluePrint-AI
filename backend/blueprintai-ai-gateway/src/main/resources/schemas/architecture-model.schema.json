@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ArchitectureModel",
+  "type": "object",
+  "required": ["metadata"],
+  "properties": {
+    "requirements": {
+      "type": "object",
+      "required": ["title", "summary"],
+      "properties": {
+        "title": { "type": "string" },
+        "summary": { "type": "string" },
+        "stakeholders": { "type": "array", "items": { "type": "string" } },
+        "constraints": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "functionalRequirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "description"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "priority": { "enum": ["HIGH", "MEDIUM", "LOW"] }
+        }
+      }
+    },
+    "nonFunctionalRequirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "category", "title"],
+        "properties": {
+          "id": { "type": "string" },
+          "category": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "metric": { "type": "string" }
+        }
+      }
+    },
+    "assumptions": { "type": "object" },
+    "highLevelDesign": {
+      "type": "object",
+      "properties": {
+        "services": { "type": "array" },
+        "connections": { "type": "array" }
+      }
+    },
+    "lowLevelDesign": { "type": "object" },
+    "databaseSchema": {
+      "type": "object",
+      "properties": {
+        "tables": { "type": "array" },
+        "relationships": { "type": "array" }
+      }
+    },
+    "apis": { "type": "object" },
+    "security": { "type": "object" },
+    "deployment": { "type": "object" },
+    "scaling": { "type": "object" },
+    "diagram": {
+      "type": "object",
+      "properties": {
+        "nodes": { "type": "array" },
+        "connections": { "type": "array" }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["schemaVersion", "generatedAt"],
+      "properties": {
+        "schemaVersion": { "type": "string" },
+        "generatedAt": { "type": "string", "format": "date-time" },
+        "systemDescription": { "type": "string" },
+        "systemType": { "type": "string" },
+        "generatorVersions": { "type": "object" }
+      }
+    }
+  }
+}

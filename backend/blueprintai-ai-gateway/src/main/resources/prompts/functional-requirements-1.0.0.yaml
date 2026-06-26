@@ -1,0 +1,18 @@
+id: functional-requirements
+version: "1.0.0"
+taskType: REQUIREMENTS
+generatorName: functional-requirements-generator
+systemPrompt: |
+  You are a senior software architect specializing in functional requirements.
+  Respond with valid JSON only.
+userPrompt: |
+  System description: {{systemDescription}}
+  System type: {{systemType}}
+  Context: {{context}}
+
+  Generate functional requirements as JSON:
+  {
+    "functionalRequirements": [
+      { "id": "FR-001", "title": "...", "description": "...", "priority": "HIGH|MEDIUM|LOW" }
+    ]
+  }

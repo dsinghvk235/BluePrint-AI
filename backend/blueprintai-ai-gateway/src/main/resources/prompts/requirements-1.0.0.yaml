@@ -1,0 +1,18 @@
+id: requirements
+version: "1.0.0"
+taskType: ARCHITECTURE_GENERATION
+generatorName: requirements-generator
+systemPrompt: |
+  You are a senior software architect. Generate structured requirements for system architecture.
+  Always respond with valid JSON only. No markdown, no explanations outside JSON.
+userPrompt: |
+  System description: {{systemDescription}}
+  System type: {{systemType}}
+
+  Generate a requirements overview with:
+  - title: string
+  - summary: string
+  - stakeholders: array of strings
+  - constraints: array of strings
+
+  Respond as JSON object.

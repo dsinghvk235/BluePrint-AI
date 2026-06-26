@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
+import { useLogin } from '@/features/auth/hooks/use-auth'
 import { APP_NAME, ROUTES } from '@/shared/constants'
-import { toast } from '@/shared/stores/toast-store'
 import {
   BrandLogo,
   Button,
@@ -16,6 +16,7 @@ import {
   CardTitle,
   Input,
   Label,
+  Spinner,
 } from '@/shared/ui'
 
 const loginSchema = z.object({
@@ -26,20 +27,17 @@ const loginSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>
 
 export function LoginPage() {
+  const login = useLogin()
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
   })
 
-  const onSubmit = () => {
-    toast({
-      title: 'Sign in',
-      description: 'Authentication arrives in a future phase.',
-      variant: 'info',
-    })
+  const onSubmit = (data: LoginForm) => {
+    login.mutate(data)
   }
 
   return (
@@ -60,12 +58,20 @@ export function LoginPage() {
               {errors.email && <p className="text-error text-xs">{errors.email.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                <Link
+                  to={ROUTES.AUTH.FORGOT_PASSWORD}
+                  className="text-xs text-[var(--color-brand)] hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
               <Input id="password" type="password" {...register('password')} />
               {errors.password && <p className="text-error text-xs">{errors.password.message}</p>}
             </div>
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              Sign in
+            <Button type="submit" className="w-full" disabled={login.isPending}>
+              {login.isPending ? <Spinner className="h-4 w-4" /> : 'Sign in'}
             </Button>
           </form>
           <p className="text-muted-foreground mt-4 text-center text-xs">
@@ -75,11 +81,6 @@ export function LoginPage() {
               className="font-medium text-[var(--color-brand)] hover:underline"
             >
               Create one
-            </Link>
-          </p>
-          <p className="text-muted-foreground mt-2 text-center text-xs">
-            <Link to={ROUTES.DASHBOARD} className="hover:underline">
-              Continue without signing in →
             </Link>
           </p>
         </CardContent>

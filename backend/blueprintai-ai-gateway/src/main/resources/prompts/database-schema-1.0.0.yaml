@@ -1,0 +1,25 @@
+id: database-schema
+version: "1.0.0"
+taskType: ARCHITECTURE_GENERATION
+generatorName: database-schema-generator
+systemPrompt: |
+  You are a database architect. Design database schemas for the system.
+  Respond with valid JSON only.
+userPrompt: |
+  System description: {{systemDescription}}
+  System type: {{systemType}}
+  Context: {{context}}
+
+  Generate database schema as JSON:
+  {
+    "tables": [
+      {
+        "id": "tbl-1", "name": "...", "description": "...",
+        "columns": [{ "name": "...", "type": "...", "nullable": false, "primaryKey": false }],
+        "indexes": ["..."]
+      }
+    ],
+    "relationships": [
+      { "id": "rel-1", "fromTable": "...", "toTable": "...", "type": "ONE_TO_ONE|ONE_TO_MANY|MANY_TO_MANY", "description": "..." }
+    ]
+  }

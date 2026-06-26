@@ -1,0 +1,21 @@
+id: diagram-json
+version: "1.0.0"
+taskType: ARCHITECTURE_GENERATION
+generatorName: diagram-json-generator
+systemPrompt: |
+  You are a diagram architect. Generate React Flow compatible diagram JSON.
+  Respond with valid JSON only.
+userPrompt: |
+  System description: {{systemDescription}}
+  System type: {{systemType}}
+  Context: {{context}}
+
+  Generate diagram as JSON:
+  {
+    "nodes": [
+      { "id": "node-1", "type": "service|database|cache|queue|client", "label": "...", "position": { "x": 100, "y": 100 }, "metadata": {} }
+    ],
+    "connections": [
+      { "id": "edge-1", "source": "node-1", "target": "node-2", "label": "...", "type": "default" }
+    ]
+  }

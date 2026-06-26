@@ -50,8 +50,64 @@ blueprintai:
   security:
     jwt:
       secret: ${JWT_SECRET:change-me-in-production-use-a-secure-256-bit-secret-key}
-      expiration-ms: 86400000
+      expiration-ms: 900000
+      refresh-expiration-ms: 604800000
       issuer: blueprintai
+    refresh-cookie-name: blueprintai_refresh_token
+  ai:
+    enabled: true
+    cache-ttl: 24h
+    cache-ttl-chat: 30m
+    circuit-breaker-failure-threshold: 5
+    circuit-breaker-reset-timeout: 2m
+    max-retry-attempts: 3
+    retry-initial-delay: 500ms
+    retry-multiplier: 2.0
+    provider-priority:
+      - OPENAI
+      - CLAUDE
+      - GEMINI
+      - DEEPSEEK
+    providers:
+      OPENAI:
+        enabled: ${OPENAI_ENABLED:false}
+        api-key: ${OPENAI_API_KEY:}
+        base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+        default-model: ${OPENAI_MODEL:gpt-4o-mini}
+        input-cost-per-1k-tokens: 0.00015
+        output-cost-per-1k-tokens: 0.0006
+        daily-quota-tokens: 1000000
+      CLAUDE:
+        enabled: ${CLAUDE_ENABLED:false}
+        api-key: ${ANTHROPIC_API_KEY:}
+        base-url: ${CLAUDE_BASE_URL:https://api.anthropic.com}
+        default-model: ${CLAUDE_MODEL:claude-3-5-haiku-20241022}
+        input-cost-per-1k-tokens: 0.00025
+        output-cost-per-1k-tokens: 0.00125
+        daily-quota-tokens: 1000000
+      GEMINI:
+        enabled: ${GEMINI_ENABLED:false}
+        api-key: ${GEMINI_API_KEY:}
+        base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com}
+        default-model: ${GEMINI_MODEL:gemini-2.0-flash}
+        input-cost-per-1k-tokens: 0.0001
+        output-cost-per-1k-tokens: 0.0004
+        daily-quota-tokens: 1000000
+      DEEPSEEK:
+        enabled: ${DEEPSEEK_ENABLED:false}
+        api-key: ${DEEPSEEK_API_KEY:}
+        base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+        default-model: ${DEEPSEEK_MODEL:deepseek-chat}
+        input-cost-per-1k-tokens: 0.00014
+        output-cost-per-1k-tokens: 0.00028
+        daily-quota-tokens: 1000000
+      OLLAMA:
+        enabled: ${OLLAMA_ENABLED:false}
+        base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+        default-model: ${OLLAMA_MODEL:llama3.2}
+        input-cost-per-1k-tokens: 0
+        output-cost-per-1k-tokens: 0
+        daily-quota-tokens: 10000000
 
 logging:
   level:

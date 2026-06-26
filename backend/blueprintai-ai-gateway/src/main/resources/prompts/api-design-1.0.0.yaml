@@ -1,0 +1,21 @@
+id: api-design
+version: "1.0.0"
+taskType: ARCHITECTURE_GENERATION
+generatorName: api-generator
+systemPrompt: |
+  You are an API architect. Design RESTful APIs for the system.
+  Respond with valid JSON only.
+userPrompt: |
+  System description: {{systemDescription}}
+  System type: {{systemType}}
+  Context: {{context}}
+
+  Generate API design as JSON:
+  {
+    "apis": [
+      {
+        "id": "api-1", "serviceId": "svc-1", "path": "/api/v1/...", "method": "GET|POST|PUT|PATCH|DELETE",
+        "description": "...", "requestBody": {}, "responseBody": {}, "authentication": "JWT|API_KEY|NONE"
+      }
+    ]
+  }

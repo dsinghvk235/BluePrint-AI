@@ -4,6 +4,8 @@ import type { RouteObject } from 'react-router-dom'
 import { AppShellLayout } from '@/app/layouts/AppShellLayout'
 import { AuthLayout } from '@/app/layouts/LandingLayout'
 import { LandingLayout } from '@/app/layouts/LandingLayout'
+import { AuthDialogRedirect } from '@/app/router/AuthDialogRedirect'
+import { GuestRoute, ProtectedRoute } from '@/app/router/ProtectedRoute'
 import { ROUTES } from '@/shared/constants'
 
 const HomePage = lazy(() =>
@@ -22,12 +24,10 @@ const WorkspacePage = lazy(() =>
   })),
 )
 
-const LoginPage = lazy(() =>
-  import('@/features/auth/pages/LoginPage').then((m) => ({ default: m.LoginPage })),
-)
-
-const RegisterPage = lazy(() =>
-  import('@/features/auth/pages/RegisterPage').then((m) => ({ default: m.RegisterPage })),
+const ForgotPasswordPage = lazy(() =>
+  import('@/features/auth/pages/ForgotPasswordPage').then((m) => ({
+    default: m.ForgotPasswordPage,
+  })),
 )
 
 const SettingsPage = lazy(() =>
@@ -59,32 +59,37 @@ const NotFoundPage = lazy(() =>
 export const routes: RouteObject[] = [
   {
     element: <LandingLayout />,
-    children: [{ path: ROUTES.HOME, element: <HomePage /> }],
-  },
-  {
-    element: <AuthLayout />,
     children: [
-      { path: ROUTES.AUTH.LOGIN, element: <LoginPage /> },
-      { path: ROUTES.AUTH.REGISTER, element: <RegisterPage /> },
+      { path: ROUTES.HOME, element: <HomePage /> },
+      { path: ROUTES.AUTH.LOGIN, element: <AuthDialogRedirect view="login" /> },
+      { path: ROUTES.AUTH.REGISTER, element: <AuthDialogRedirect view="register" /> },
     ],
   },
   {
-    element: <AppShellLayout />,
+    element: <GuestRoute />,
     children: [
-      { path: ROUTES.DASHBOARD, element: <DashboardPage /> },
-      { path: ROUTES.PROJECTS, element: <ProjectsPage /> },
-      { path: ROUTES.SEARCH, element: <SearchPage /> },
-      { path: ROUTES.SETTINGS, element: <SettingsPage /> },
-      { path: ROUTES.PROFILE, element: <ProfilePage /> },
+      {
+        element: <AuthLayout />,
+        children: [{ path: ROUTES.AUTH.FORGOT_PASSWORD, element: <ForgotPasswordPage /> }],
+      },
     ],
   },
   {
-    path: ROUTES.WORKSPACE,
-    element: <WorkspacePage />,
-  },
-  {
-    path: ROUTES.WORKSPACE_PROJECT,
-    element: <WorkspacePage />,
+    element: <ProtectedRoute />,
+    children: [
+      {
+        element: <AppShellLayout />,
+        children: [
+          { path: ROUTES.DASHBOARD, element: <DashboardPage /> },
+          { path: ROUTES.PROJECTS, element: <ProjectsPage /> },
+          { path: ROUTES.SEARCH, element: <SearchPage /> },
+          { path: ROUTES.SETTINGS, element: <SettingsPage /> },
+          { path: ROUTES.PROFILE, element: <ProfilePage /> },
+        ],
+      },
+      { path: ROUTES.WORKSPACE, element: <WorkspacePage /> },
+      { path: ROUTES.WORKSPACE_PROJECT, element: <WorkspacePage /> },
+    ],
   },
   { path: ROUTES.NOT_FOUND, element: <NotFoundPage /> },
 ]

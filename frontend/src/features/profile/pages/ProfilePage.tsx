@@ -1,11 +1,11 @@
 import { motion } from 'framer-motion'
-import { Calendar, Mail, MapPin } from 'lucide-react'
+import { Calendar, Mail } from 'lucide-react'
 
+import { useSession } from '@/features/auth/hooks/use-auth'
 import {
   Avatar,
   AvatarFallback,
   Badge,
-  Button,
   Card,
   CardContent,
   CardDescription,
@@ -14,10 +14,30 @@ import {
   Input,
   Label,
   Separator,
+  Skeleton,
 } from '@/shared/ui'
-import { toast } from '@/shared/stores/toast-store'
+
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
+}
 
 export function ProfilePage() {
+  const { data: user, isLoading } = useSession()
+
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="mt-8 h-64 rounded-xl" />
+      </div>
+    )
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -31,13 +51,15 @@ export function ProfilePage() {
         <CardHeader>
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16">
-              <AvatarFallback className="text-lg">EN</AvatarFallback>
+              <AvatarFallback className="text-lg">
+                {user ? getInitials(user.fullName) : '??'}
+              </AvatarFallback>
             </Avatar>
             <div>
-              <CardTitle>Engineer</CardTitle>
-              <CardDescription>you@blueprintai.dev</CardDescription>
+              <CardTitle>{user?.fullName}</CardTitle>
+              <CardDescription>{user?.email}</CardDescription>
               <Badge variant="accent" className="mt-2">
-                Pro Plan
+                {user?.role ?? 'USER'}
               </Badge>
             </div>
           </div>
@@ -46,40 +68,26 @@ export function ProfilePage() {
           <Separator />
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="name">Display name</Label>
-              <Input id="name" defaultValue="Engineer" />
+              <Label htmlFor="name">Full name</Label>
+              <Input id="name" defaultValue={user?.fullName} readOnly />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" defaultValue="you@blueprintai.dev" />
+              <Input id="email" type="email" defaultValue={user?.email} readOnly />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="bio">Bio</Label>
-            <Input id="bio" placeholder="Systems thinker, architecture enthusiast" />
-          </div>
           <div className="text-muted-foreground flex flex-wrap gap-4 text-xs">
+            {user?.createdAt && (
+              <span className="flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                Joined {new Date(user.createdAt).toLocaleDateString()}
+              </span>
+            )}
             <span className="flex items-center gap-1">
-              <Calendar className="h-3 w-3" /> Joined June 2026
-            </span>
-            <span className="flex items-center gap-1">
-              <MapPin className="h-3 w-3" /> San Francisco
-            </span>
-            <span className="flex items-center gap-1">
-              <Mail className="h-3 w-3" /> Public profile
+              <Mail className="h-3 w-3" />
+              {user?.emailVerified ? 'Email verified' : 'Email not verified'}
             </span>
           </div>
-          <Button
-            onClick={() =>
-              toast({
-                title: 'Profile updated',
-                description: 'Changes saved locally.',
-                variant: 'success',
-              })
-            }
-          >
-            Save changes
-          </Button>
         </CardContent>
       </Card>
     </motion.div>

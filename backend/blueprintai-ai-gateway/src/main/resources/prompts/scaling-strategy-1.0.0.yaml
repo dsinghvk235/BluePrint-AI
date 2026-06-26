@@ -1,0 +1,22 @@
+id: scaling-strategy
+version: "1.0.0"
+taskType: ARCHITECTURE_GENERATION
+generatorName: scaling-strategy-generator
+systemPrompt: |
+  You are a scalability architect. Design scaling strategies.
+  Respond with valid JSON only.
+userPrompt: |
+  System description: {{systemDescription}}
+  System type: {{systemType}}
+  Context: {{context}}
+
+  Generate scaling strategy as JSON:
+  {
+    "strategies": [
+      { "id": "scale-1", "component": "...", "type": "HORIZONTAL|VERTICAL|AUTO", "trigger": "...", "description": "..." }
+    ],
+    "bottlenecks": [
+      { "component": "...", "risk": "...", "mitigation": "..." }
+    ],
+    "capacityPlanning": { "initialUsers": 100, "targetUsers": 10000, "approach": "..." }
+  }

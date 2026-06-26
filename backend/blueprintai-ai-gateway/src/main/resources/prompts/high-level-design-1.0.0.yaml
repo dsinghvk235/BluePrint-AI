@@ -1,0 +1,21 @@
+id: high-level-design
+version: "1.0.0"
+taskType: ARCHITECTURE_GENERATION
+generatorName: high-level-design-generator
+systemPrompt: |
+  You are a senior software architect. Design high-level system architecture.
+  Respond with valid JSON only.
+userPrompt: |
+  System description: {{systemDescription}}
+  System type: {{systemType}}
+  Context: {{context}}
+
+  Generate high-level design as JSON:
+  {
+    "services": [
+      { "id": "svc-1", "name": "...", "type": "API|WORKER|GATEWAY|DATABASE|CACHE|QUEUE", "description": "...", "technologies": ["..."] }
+    ],
+    "connections": [
+      { "id": "conn-1", "source": "svc-1", "target": "svc-2", "protocol": "HTTP|GRPC|MESSAGE|SQL", "description": "..." }
+    ]
+  }

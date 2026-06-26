@@ -1,6 +1,7 @@
 import { Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
+import { useLogout, useSession } from '@/features/auth/hooks/use-auth'
 import { ROUTES } from '@/shared/constants'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import { BrandLogo } from '@/shared/ui/brand-logo'
@@ -18,17 +19,21 @@ import { cn } from '@/shared/utils'
 interface NavbarProps extends React.ComponentProps<'header'> {
   onSearchClick?: () => void
   showSearch?: boolean
-  user?: { name: string; email: string }
 }
 
-function Navbar({
-  className,
-  onSearchClick,
-  showSearch = true,
-  user = { name: 'Engineer', email: 'you@blueprintai.dev' },
-  children,
-  ...props
-}: NavbarProps) {
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
+}
+
+function Navbar({ className, onSearchClick, showSearch = true, children, ...props }: NavbarProps) {
+  const { data: user } = useSession()
+  const logout = useLogout()
+
   return (
     <header
       className={cn(
@@ -68,7 +73,7 @@ function Navbar({
               >
                 <Avatar className="h-8 w-8">
                   <AvatarFallback className="bg-[var(--color-brand-muted)] text-xs text-[var(--color-brand)]">
-                    EN
+                    {user ? getInitials(user.fullName) : '??'}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -76,8 +81,10 @@ function Navbar({
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>
                 <div className="flex flex-col">
-                  <span>{user.name}</span>
-                  <span className="text-muted-foreground text-xs font-normal">{user.email}</span>
+                  <span>{user?.fullName ?? 'User'}</span>
+                  <span className="text-muted-foreground text-xs font-normal">
+                    {user?.email ?? ''}
+                  </span>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
@@ -88,8 +95,8 @@ function Navbar({
                 <Link to={ROUTES.SETTINGS}>Settings</Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link to={ROUTES.AUTH.LOGIN}>Sign out</Link>
+              <DropdownMenuItem onClick={() => logout.mutate()} disabled={logout.isPending}>
+                Sign out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

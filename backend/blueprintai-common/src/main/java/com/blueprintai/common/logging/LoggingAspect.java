@@ -14,7 +14,7 @@ public class LoggingAspect {
 
     private static final Logger log = LoggerFactory.getLogger(LoggingAspect.class);
 
-    @Around("within(com.blueprintai..internal..*)")
+    @Around("@within(org.springframework.stereotype.Service) && within(com.blueprintai..*)")
     public Object logServiceExecution(ProceedingJoinPoint joinPoint) throws Throwable {
         long start = System.currentTimeMillis();
         String method = joinPoint.getSignature().toShortString();
