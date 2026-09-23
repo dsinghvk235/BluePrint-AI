@@ -13,6 +13,7 @@ import { LearningPanel } from '@/features/canvas/components/LearningPanel'
 import { WorkspaceLeftPanel } from '@/features/canvas/components/WorkspaceLeftPanel'
 import { LEFT_PANEL_TABS } from '@/features/canvas/constants'
 import { recoverFromLocalStorage, useAutosave } from '@/features/canvas/hooks/use-autosave'
+import { useCommandPaletteStore } from '@/shared/stores/command-palette-store'
 import { stopGenerationPolling } from '@/features/canvas/hooks/generation-polling'
 import { useCanvasKeyboard } from '@/features/canvas/hooks/use-canvas-keyboard'
 import { useDiagram } from '@/features/canvas/hooks/use-diagram'
@@ -107,9 +108,11 @@ function WorkspaceCanvasInner() {
         <CanvasToolbar
           projectId={projectId}
           projectName={project?.name}
+          projectTheme={project?.theme}
           isDirty={isDirty}
           isSaving={isSaving}
           onFitView={handleFitView}
+          onOpenSearch={() => useCommandPaletteStore.getState().setOpen(true)}
         />
 
         <div className="flex flex-1 overflow-hidden">

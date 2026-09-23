@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { AlertCircle, Sparkles, X } from 'lucide-react'
 
 import { formatGenerationError } from '@/features/canvas/utils/format-generation-error'
+import { formatGenerationStep } from '@/features/canvas/utils/format-generation-step'
 import { stopGenerationPolling } from '@/features/canvas/hooks/generation-polling'
 import { useCanvasUiStore } from '@/features/canvas/stores/canvas-ui-store'
 import { Button } from '@/shared/ui'
@@ -55,8 +56,8 @@ export function GenerationProgress() {
             </p>
           ) : (
             <>
-              <p className="text-muted-foreground mt-1 truncate text-xs capitalize">
-                {step || 'Initializing'}
+              <p className="text-muted-foreground mt-1 truncate text-xs">
+                {formatGenerationStep(step)}
               </p>
               <div className="bg-muted mt-3 h-1.5 overflow-hidden rounded-full">
                 <motion.div

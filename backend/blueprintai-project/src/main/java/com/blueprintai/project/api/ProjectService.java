@@ -35,4 +35,8 @@ public interface ProjectService {
     PaginatedResponse<ProjectResponse> listProjects(ProjectQueryParams query, UUID ownerId);
 
     List<ProjectResponse> getRecentProjects(int limit, UUID ownerId);
+
+    ProjectResponse togglePin(UUID projectId, UUID ownerId);
+
+    void recordExport(UUID projectId, UUID ownerId);
 }

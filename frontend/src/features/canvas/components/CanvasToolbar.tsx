@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   AlignCenter,
   AlignLeft,
@@ -18,6 +19,8 @@ import { useSaveDiagram } from '@/features/canvas/hooks/use-diagram'
 import { reactFlowToCanvasSnapshot } from '@/features/canvas/engine/react-flow-adapter'
 import { useCanvasStore } from '@/features/canvas/stores/canvas-store'
 import { useCanvasUiStore } from '@/features/canvas/stores/canvas-ui-store'
+import { ExportDialog } from '@/features/export'
+import { FeedbackWidget } from '@/features/review'
 import { ROUTES } from '@/shared/constants'
 import { ThemeToggle } from '@/shared/ui/theme-toggle'
 import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui'
@@ -27,27 +30,29 @@ import { cn } from '@/shared/utils'
 interface CanvasToolbarProps {
   projectId?: string
   projectName?: string
+  projectTheme?: string | null
   isDirty?: boolean
   isSaving?: boolean
   onFitView?: () => void
+  onOpenSearch?: () => void
 }
 
 export function CanvasToolbar({
   projectId,
   projectName = 'Untitled Project',
+  projectTheme,
   isDirty,
   isSaving,
   onFitView,
+  onOpenSearch,
 }: CanvasToolbarProps) {
+  const [exportOpen, setExportOpen] = useState(false)
   const undo = useCanvasStore((s) => s.undo)
   const redo = useCanvasStore((s) => s.redo)
   const canUndo = useCanvasStore((s) => s.past.length > 0)
   const canRedo = useCanvasStore((s) => s.future.length > 0)
   const autoArrange = useCanvasStore((s) => s.autoArrange)
   const alignSelected = useCanvasStore((s) => s.alignSelected)
-  const nodes = useCanvasStore((s) => s.nodes)
-  const edges = useCanvasStore((s) => s.edges)
-  const viewport = useCanvasStore((s) => s.viewport)
   const diagramVersion = useCanvasStore((s) => s.diagramVersion)
   const markClean = useCanvasStore((s) => s.markClean)
 
@@ -55,6 +60,7 @@ export function CanvasToolbar({
 
   function handleSave() {
     if (!projectId) return
+    const { nodes, edges, viewport } = useCanvasStore.getState()
     const snapshot = reactFlowToCanvasSnapshot(nodes, edges, viewport)
     save(
       { canvasData: snapshot, version: diagramVersion },
@@ -69,14 +75,7 @@ export function CanvasToolbar({
   }
 
   function handleExport() {
-    const snapshot = reactFlowToCanvasSnapshot(nodes, edges, viewport)
-    const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${projectName.replace(/\s+/g, '-').toLowerCase()}-diagram.json`
-    a.click()
-    URL.revokeObjectURL(url)
+    setExportOpen(true)
   }
 
   return (
@@ -107,14 +106,22 @@ export function CanvasToolbar({
               useCanvasUiStore.getState().openGenerateDialog()
             }}
           />
-          <ToolbarButton icon={Search} label="Search" disabled />
+          <ToolbarButton icon={Search} label="Search (⌘K)" onClick={onOpenSearch} />
           <ToolbarButton
             icon={Save}
             label="Save (⌘S)"
             onClick={handleSave}
             disabled={!projectId || isSavePending}
           />
-          <ToolbarButton icon={Download} label="Export JSON" onClick={handleExport} />
+          <ToolbarButton icon={Download} label="Export" onClick={handleExport} />
+          {projectId && (
+            <FeedbackWidget
+              targetType="ARCHITECTURE"
+              targetId={projectId}
+              projectId={projectId}
+              compact
+            />
+          )}
           <Divider />
           <ToolbarButton icon={Undo2} label="Undo (⌘Z)" onClick={undo} disabled={!canUndo} />
           <ToolbarButton icon={Redo2} label="Redo (⌘⇧Z)" onClick={redo} disabled={!canRedo} />
@@ -138,6 +145,13 @@ export function CanvasToolbar({
 
         <div className="hidden w-8 sm:block" />
       </header>
+      <ExportDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        projectId={projectId}
+        projectName={projectName}
+        theme={projectTheme}
+      />
     </TooltipProvider>
   )
 }

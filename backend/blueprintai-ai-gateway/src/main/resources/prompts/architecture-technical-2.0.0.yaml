@@ -1,0 +1,120 @@
+id: architecture-technical
+version: "2.0.0"
+taskType: ARCHITECTURE_GENERATION
+generatorName: architecture-technical-generator
+systemPrompt: |
+  You are a Staff/Principal Software Architect producing detailed technical design artifacts.
+  Your output is used by senior engineers to implement and review production systems.
+
+  Quality bar:
+  - Reference services from the foundation high-level design by id where applicable.
+  - Include concrete schemas, API paths, auth patterns, and operational concerns.
+  - Security must cover authn/authz, secrets, encryption, and threat mitigations.
+  - Deployment must name orchestration, CI/CD, and environment strategy.
+  - Scaling must address horizontal scaling, caching, sharding, and backpressure.
+
+  Respond with valid JSON only. No markdown fences.
+userPrompt: |
+  Produce detailed technical architecture sections building on the foundation design.
+
+  System description: {{systemDescription}}
+  System type: {{systemType}}
+  Foundation context (requirements + high-level design already decided):
+  {{context}}
+
+  Return JSON:
+  {
+    "lowLevelDesign": {
+      "components": [
+        {
+          "id": "comp-1",
+          "serviceId": "svc-id-from-hld",
+          "name": "string",
+          "responsibility": "single responsibility",
+          "interfaces": ["REST /v1/...", "gRPC ...", "consumes topic ..."],
+          "patterns": ["Circuit Breaker", "Saga", "..."],
+          "failureModes": ["what breaks and how it is handled"]
+        }
+      ],
+      "dataFlows": [
+        {
+          "id": "flow-1",
+          "name": "e.g. User signup",
+          "steps": ["step with service names", "include async boundaries"]
+        }
+      ]
+    },
+    "databaseSchema": {
+      "tables": [
+        {
+          "name": "table_name",
+          "purpose": "string",
+          "columns": [{ "name": "...", "type": "...", "constraints": "..." }],
+          "indexes": ["..."],
+          "partitioning": "strategy if any"
+        }
+      ],
+      "relationships": [
+        { "from": "table_a", "to": "table_b", "type": "1:N|N:M", "description": "..." }
+      ]
+    },
+    "apis": {
+      "apis": [
+        {
+          "name": "Service API",
+          "basePath": "/api/v1",
+          "endpoints": [
+            {
+              "method": "GET|POST|PUT|DELETE",
+              "path": "/resource",
+              "description": "behavior",
+              "auth": "JWT|mTLS|API key",
+              "requestSummary": "...",
+              "responseSummary": "..."
+            }
+          ]
+        }
+      ]
+    },
+    "security": {
+      "controls": [
+        {
+          "area": "Authentication|Authorization|Data|Network|Secrets",
+          "control": "specific mechanism",
+          "implementation": "tools/patterns used",
+          "rationale": "why this choice"
+        }
+      ],
+      "threatModel": ["STRIDE-style threats and mitigations"]
+    },
+    "deployment": {
+      "environments": [
+        {
+          "name": "production|staging|dev",
+          "infrastructure": "K8s/EKS/GKE, regions",
+          "cicd": "pipeline approach",
+          "observability": "metrics, logs, traces stack"
+        }
+      ],
+      "rolloutStrategy": "blue-green|canary|rolling"
+    },
+    "scaling": {
+      "strategies": [
+        {
+          "component": "service or layer",
+          "bottleneck": "what limits scale",
+          "strategy": "autoscaling, sharding, caching, etc.",
+          "targetMetric": "CPU, queue depth, RPS"
+        }
+      ],
+      "capacityPlanning": { "peakLoad": "...", "headroom": "..." }
+    }
+  }
+
+  Minimum counts:
+  - At least 6 low-level components mapped to HLD services
+  - At least 3 data flows for critical user journeys
+  - At least 4 database tables with meaningful columns
+  - At least 8 API endpoints across services
+  - At least 6 security controls
+  - At least 3 scaling strategies

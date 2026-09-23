@@ -86,7 +86,10 @@ public class OllamaProviderClient extends AbstractHttpProviderClient {
             ObjectNode responseFormat = body.putObject("response_format");
             responseFormat.put("type", "json_object");
         }
-        body.put("temperature", 0.2);
+        body.put("temperature", taskType == AiTaskType.ARCHITECTURE_GENERATION ? 0.25 : 0.2);
+        if (taskType == AiTaskType.ARCHITECTURE_GENERATION) {
+            body.put("num_predict", 16384);
+        }
         return body;
     }
 

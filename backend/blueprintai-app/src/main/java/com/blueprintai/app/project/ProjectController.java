@@ -3,13 +3,17 @@ package com.blueprintai.app.project;
 import com.blueprintai.auth.api.CurrentUserProvider;
 import com.blueprintai.common.response.ApiResponse;
 import com.blueprintai.common.response.PaginatedResponse;
+import com.blueprintai.diagram.api.DiagramService;
 import com.blueprintai.project.api.ProjectService;
 import com.blueprintai.project.api.ProjectStatus;
 import com.blueprintai.project.api.dto.CreateProjectRequest;
+import com.blueprintai.project.api.dto.FeedbackSummary;
+import com.blueprintai.project.api.dto.ProjectMetadataResponse;
 import com.blueprintai.project.api.dto.ProjectQueryParams;
 import com.blueprintai.project.api.dto.ProjectResponse;
 import com.blueprintai.project.api.dto.RenameProjectRequest;
 import com.blueprintai.project.api.dto.UpdateProjectRequest;
+import com.blueprintai.review.api.ReviewFeedbackService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -31,10 +35,18 @@ import org.springframework.web.bind.annotation.RestController;
 public class ProjectController {
 
     private final ProjectService projectService;
+    private final DiagramService diagramService;
+    private final ReviewFeedbackService reviewFeedbackService;
     private final CurrentUserProvider currentUserProvider;
 
-    public ProjectController(ProjectService projectService, CurrentUserProvider currentUserProvider) {
+    public ProjectController(
+            ProjectService projectService,
+            DiagramService diagramService,
+            ReviewFeedbackService reviewFeedbackService,
+            CurrentUserProvider currentUserProvider) {
         this.projectService = projectService;
+        this.diagramService = diagramService;
+        this.reviewFeedbackService = reviewFeedbackService;
         this.currentUserProvider = currentUserProvider;
     }
 
@@ -73,6 +85,35 @@ public class ProjectController {
         return ApiResponse.success(projectService.getProject(projectId, currentUserProvider.getCurrentUserId()));
     }
 
+    @GetMapping("/{projectId}/metadata")
+    public ApiResponse<ProjectMetadataResponse> getProjectMetadata(@PathVariable UUID projectId) {
+        UUID ownerId = currentUserProvider.getCurrentUserId();
+        ProjectResponse project = projectService.getProject(projectId, ownerId);
+        var reviewSummary = reviewFeedbackService.getProjectSummary(projectId);
+        FeedbackSummary summary = new FeedbackSummary(
+                reviewSummary.averageRating(),
+                reviewSummary.totalReviews(),
+                reviewSummary.helpfulCount(),
+                reviewSummary.notHelpfulCount());
+        return ApiResponse.success(new ProjectMetadataResponse(
+                project.id(),
+                project.ownerId(),
+                project.name(),
+                project.currentVersion(),
+                project.status(),
+                project.theme(),
+                project.createdAt(),
+                project.updatedAt(),
+                project.lastOpened(),
+                project.favorite(),
+                project.pinned(),
+                project.exportCount(),
+                project.lastAiModel(),
+                project.lastAiProvider(),
+                project.lastPromptVersion(),
+                summary));
+    }
+
     @PostMapping("/{projectId}/open")
     public ApiResponse<ProjectResponse> openProject(@PathVariable UUID projectId) {
         return ApiResponse.success(projectService.openProject(projectId, currentUserProvider.getCurrentUserId()));
@@ -99,9 +140,15 @@ public class ProjectController {
 
     @PostMapping("/{projectId}/duplicate")
     public ResponseEntity<ApiResponse<ProjectResponse>> duplicateProject(@PathVariable UUID projectId) {
-        ProjectResponse project =
-                projectService.duplicateProject(projectId, currentUserProvider.getCurrentUserId());
+        UUID ownerId = currentUserProvider.getCurrentUserId();
+        ProjectResponse project = projectService.duplicateProject(projectId, ownerId);
+        diagramService.copyDiagramToProject(projectId, project.id(), ownerId);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(project, "Project duplicated"));
+    }
+
+    @PatchMapping("/{projectId}/pin")
+    public ApiResponse<ProjectResponse> togglePin(@PathVariable UUID projectId) {
+        return ApiResponse.success(projectService.togglePin(projectId, currentUserProvider.getCurrentUserId()));
     }
 
     @DeleteMapping("/{projectId}")

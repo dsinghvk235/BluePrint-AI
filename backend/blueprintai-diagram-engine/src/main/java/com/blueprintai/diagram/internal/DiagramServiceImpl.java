@@ -3,6 +3,7 @@ package com.blueprintai.diagram.internal;
 import com.blueprintai.common.exception.BusinessException;
 import com.blueprintai.common.exception.ErrorCode;
 import com.blueprintai.diagram.api.DiagramService;
+import com.blueprintai.diagram.api.dto.DiagramComponentSearchHit;
 import com.blueprintai.diagram.api.dto.DiagramResponse;
 import com.blueprintai.diagram.api.dto.SaveDiagramRequest;
 import com.blueprintai.diagram.internal.entity.Diagram;
@@ -11,6 +12,9 @@ import com.blueprintai.project.api.ProjectService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -82,6 +86,84 @@ public class DiagramServiceImpl implements DiagramService {
         diagram.setVersion(diagram.getVersion() + 1);
 
         return toResponse(diagramRepository.save(diagram));
+    }
+
+    @Override
+    @Transactional
+    public void copyDiagramToProject(UUID sourceProjectId, UUID targetProjectId, UUID ownerId) {
+        projectService.getProject(sourceProjectId, ownerId);
+        projectService.getProject(targetProjectId, ownerId);
+
+        diagramRepository.findByProjectId(sourceProjectId).ifPresent(source -> {
+            Diagram target = diagramRepository
+                    .findByProjectId(targetProjectId)
+                    .orElseGet(() -> {
+                        Diagram created = new Diagram();
+                        created.setProjectId(targetProjectId);
+                        created.setName(source.getName());
+                        return created;
+                    });
+            target.setCanvasData(source.getCanvasData());
+            target.setVersionMetadata(source.getVersionMetadata());
+            diagramRepository.save(target);
+        });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DiagramComponentSearchHit> searchComponents(UUID ownerId, String query, int limit) {
+        if (query == null || query.isBlank()) {
+            return List.of();
+        }
+        int safeLimit = Math.min(Math.max(limit, 1), 30);
+        String pattern = "%" + query.trim().toLowerCase(Locale.ROOT) + "%";
+        List<DiagramComponentSearchHit> hits = new ArrayList<>();
+
+        for (Object[] row : diagramRepository.findDiagramRowsForSearch(ownerId, pattern)) {
+            UUID projectId = (UUID) row[1];
+            String projectName = (String) row[2];
+            String canvasJson = (String) row[3];
+            collectNodeHits(hits, projectId, projectName, canvasJson, query, safeLimit);
+            if (hits.size() >= safeLimit) {
+                break;
+            }
+        }
+        return hits.size() > safeLimit ? hits.subList(0, safeLimit) : hits;
+    }
+
+    private void collectNodeHits(
+            List<DiagramComponentSearchHit> hits,
+            UUID projectId,
+            String projectName,
+            String canvasJson,
+            String query,
+            int limit) {
+        JsonNode root = parseJson(canvasJson);
+        JsonNode nodes = root.path("nodes");
+        if (!nodes.isArray()) {
+            return;
+        }
+        String q = query.trim().toLowerCase(Locale.ROOT);
+        for (JsonNode node : nodes) {
+            if (hits.size() >= limit) {
+                return;
+            }
+            String nodeId = node.path("id").asText("");
+            JsonNode data = node.path("data");
+            String label = data.path("label").asText("");
+            String category = data.path("category").asText("");
+            String technology = data.path("technology").asText("");
+            if (matchesQuery(q, label, category, technology)) {
+                hits.add(new DiagramComponentSearchHit(
+                        projectId, projectName, nodeId, label, category, technology.isBlank() ? null : technology));
+            }
+        }
+    }
+
+    private boolean matchesQuery(String query, String label, String category, String technology) {
+        return label.toLowerCase(Locale.ROOT).contains(query)
+                || category.toLowerCase(Locale.ROOT).contains(query)
+                || technology.toLowerCase(Locale.ROOT).contains(query);
     }
 
     private DiagramResponse emptyDiagramResponse(UUID projectId) {

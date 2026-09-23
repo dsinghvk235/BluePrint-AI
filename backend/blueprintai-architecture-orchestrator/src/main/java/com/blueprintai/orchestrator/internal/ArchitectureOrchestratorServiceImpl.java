@@ -20,6 +20,7 @@ import com.blueprintai.orchestrator.api.dto.ValidateArchitectureRequest;
 import com.blueprintai.orchestrator.api.dto.ValidateArchitectureResponse;
 import com.blueprintai.orchestrator.internal.entity.ArchitectureGeneration;
 import com.blueprintai.orchestrator.internal.generator.ArchitectureGenerator;
+import com.blueprintai.orchestrator.internal.generator.DiagramFromHighLevelDesignBuilder;
 import com.blueprintai.orchestrator.internal.generator.GeneratorLookup;
 import com.blueprintai.orchestrator.internal.repository.ArchitectureGenerationRepository;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -123,20 +124,32 @@ public class ArchitectureOrchestratorServiceImpl implements ArchitectureOrchestr
             context = context + "\n" + request.additionalContext();
         }
 
-        ArchitectureGenerator.GenerationContext genContext = new ArchitectureGenerator.GenerationContext(
-                generation.getSystemDescription(),
-                generation.getSystemType(),
-                context,
-                userId,
-                request.projectId(),
-                generation.getCorrelationId(),
-                false);
-
-        JsonNode sectionResult = generator.generate(genContext);
         ObjectNode payload = generation.getArchitecturePayload() != null
                 ? (ObjectNode) generation.getArchitecturePayload().deepCopy()
                 : objectMapper.createObjectNode();
+
+        JsonNode sectionResult;
+        if (request.section() == ArchitectureSection.DIAGRAM) {
+            sectionResult = DiagramFromHighLevelDesignBuilder.build(
+                    payload.get("highLevelDesign"), objectMapper);
+        } else {
+            ArchitectureGenerator.GenerationContext genContext = new ArchitectureGenerator.GenerationContext(
+                    generation.getSystemDescription(),
+                    generation.getSystemType(),
+                    context,
+                    userId,
+                    request.projectId(),
+                    generation.getCorrelationId(),
+                    false);
+            sectionResult = generator.generate(genContext);
+        }
+
         generationEngine.applySection(payload, request.section(), sectionResult);
+
+        if (request.section() == ArchitectureSection.HIGH_LEVEL_DESIGN) {
+            JsonNode diagram = DiagramFromHighLevelDesignBuilder.build(payload.get("highLevelDesign"), objectMapper);
+            generationEngine.applySection(payload, ArchitectureSection.DIAGRAM, diagram);
+        }
         generation.setArchitecturePayload(payload);
         generation.setUpdatedAt(Instant.now());
         generationRepository.save(generation);

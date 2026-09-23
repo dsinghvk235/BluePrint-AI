@@ -1,0 +1,83 @@
+id: architecture-foundation
+version: "2.0.0"
+taskType: ARCHITECTURE_GENERATION
+generatorName: architecture-foundation-generator
+systemPrompt: |
+  You are a Staff/Principal Software Architect with 15+ years designing large-scale distributed systems
+  (Netflix, Uber, AWS-scale). You produce production-grade architecture artifacts used in system design
+  interviews and engineering RFCs.
+
+  Quality bar:
+  - Be specific: name real technologies (e.g. Kafka, PostgreSQL, Redis, Envoy, Kubernetes), not vague labels.
+  - Quantify scale: state assumed DAU, peak QPS, data volume, and latency SLOs where relevant.
+  - Cover trade-offs: consistency vs availability, sync vs async, build vs buy.
+  - Avoid textbook filler ("scalable", "robust") without concrete mechanisms.
+  - Functional requirements must reflect the actual domain (streaming, payments, messaging, etc.).
+
+  Respond with valid JSON only. No markdown fences, no commentary outside JSON.
+userPrompt: |
+  Design the foundation architecture for this system.
+
+  System description: {{systemDescription}}
+  System type: {{systemType}}
+  Domain guidance: {{domainGuidance}}
+
+  Return JSON with this exact structure:
+  {
+    "requirements": {
+      "title": "string — concise architecture title",
+      "summary": "string — 3-5 sentences with scale assumptions and key architectural bets",
+      "stakeholders": ["product", "engineering", "..."],
+      "constraints": ["specific technical or business constraints"]
+    },
+    "functionalRequirements": [
+      {
+        "id": "FR-001",
+        "title": "string",
+        "description": "detailed behavior, acceptance criteria, edge cases",
+        "priority": "HIGH|MEDIUM|LOW"
+      }
+    ],
+    "nonFunctionalRequirements": [
+      {
+        "id": "NFR-001",
+        "category": "Performance|Availability|Security|Scalability|Reliability|Compliance",
+        "title": "string",
+        "description": "how it is achieved architecturally",
+        "metric": "measurable target e.g. p99 < 200ms, 99.99% uptime"
+      }
+    ],
+    "assumptions": {
+      "scale": { "dailyActiveUsers": "...", "peakQps": "...", "dataRetention": "..." },
+      "deployment": { "regions": "...", "cloud": "..." },
+      "team": { "size": "...", "constraints": "..." },
+      "risks": ["top architectural risks with mitigations"]
+    },
+    "highLevelDesign": {
+      "services": [
+        {
+          "id": "svc-unique-id",
+          "name": "Human-readable name",
+          "type": "GATEWAY|API|WORKER|DATABASE|CACHE|QUEUE|CLIENT|CDN|AUTH",
+          "description": "responsibility and key design decisions",
+          "technologies": ["specific stack items"],
+          "scalingNotes": "how this component scales"
+        }
+      ],
+      "connections": [
+        {
+          "id": "conn-1",
+          "source": "svc-id",
+          "target": "svc-id",
+          "protocol": "HTTP|GRPC|MESSAGE|SQL|WEBSOCKET",
+          "description": "what flows across this boundary and why"
+        }
+      ]
+    }
+  }
+
+  Minimum counts for a credible design:
+  - At least 8 functional requirements covering core domain flows
+  - At least 6 non-functional requirements across categories
+  - At least 10 services in highLevelDesign (include gateway, services, data stores, queues, cache, observability)
+  - At least 12 connections showing realistic data/control flow

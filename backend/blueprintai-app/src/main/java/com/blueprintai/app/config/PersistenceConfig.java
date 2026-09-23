@@ -17,6 +17,9 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
             "com.blueprintai.diagram.internal.entity",
             "com.blueprintai.orchestrator.internal.entity",
             "com.blueprintai.aigateway.internal.logging",
+            "com.blueprintai.search.internal.entity",
+            "com.blueprintai.export.internal.entity",
+            "com.blueprintai.review.internal.entity",
         })
 @EnableJpaRepositories(
         basePackages = {
@@ -25,5 +28,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
             "com.blueprintai.diagram.internal.repository",
             "com.blueprintai.orchestrator.internal.repository",
             "com.blueprintai.aigateway.internal.logging",
+            "com.blueprintai.search.internal.repository",
+            "com.blueprintai.export.internal.repository",
+            "com.blueprintai.review.internal.repository",
         })
 public class PersistenceConfig {}

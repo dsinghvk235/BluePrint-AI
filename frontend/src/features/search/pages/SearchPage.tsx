@@ -1,9 +1,15 @@
 import { motion } from 'framer-motion'
-import { FileText, FolderKanban, Search, Sparkles } from 'lucide-react'
-import { useState } from 'react'
+import { BookOpen, FileText, FolderKanban, Loader2, Search, Sparkles } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-import { ROUTES } from '@/shared/constants'
+import {
+  highlightText,
+  useSearchHistory,
+  useUnifiedSearch,
+  type SearchCategory,
+  type SearchResultItem,
+} from '@/features/search'
 import { useDebounce } from '@/shared/hooks'
 import {
   Badge,
@@ -17,42 +23,64 @@ import {
   TabsTrigger,
 } from '@/shared/ui'
 
-const allResults = [
-  { type: 'project', title: 'Netflix Architecture', path: ROUTES.WORKSPACE },
-  { type: 'project', title: 'Uber Ride Matching', path: ROUTES.WORKSPACE },
-  { type: 'template', title: 'E-commerce Platform', path: ROUTES.PROJECTS },
-  { type: 'lesson', title: 'Microservices Fundamentals', path: ROUTES.DASHBOARD },
-  { type: 'component', title: 'API Gateway', path: ROUTES.WORKSPACE },
-] as const
+const categoryIcons: Record<SearchCategory, typeof Search> = {
+  PROJECT: FolderKanban,
+  RECENT_PROJECT: FolderKanban,
+  COMPONENT: Search,
+  KNOWLEDGE: BookOpen,
+  TEMPLATE: FileText,
+  ACTION: Sparkles,
+}
 
-const typeIcons = {
-  project: FolderKanban,
-  template: FileText,
-  lesson: Sparkles,
-  component: Search,
-} as const
+const categoryLabels: Record<SearchCategory, string> = {
+  PROJECT: 'project',
+  RECENT_PROJECT: 'recent',
+  COMPONENT: 'component',
+  KNOWLEDGE: 'lesson',
+  TEMPLATE: 'template',
+  ACTION: 'action',
+}
 
-const typeColors = {
-  project: 'default',
-  template: 'secondary',
-  lesson: 'accent',
-  component: 'info',
-} as const
+const categoryVariants: Record<
+  SearchCategory,
+  'default' | 'secondary' | 'accent' | 'info' | 'outline'
+> = {
+  PROJECT: 'default',
+  RECENT_PROJECT: 'secondary',
+  COMPONENT: 'info',
+  KNOWLEDGE: 'accent',
+  TEMPLATE: 'secondary',
+  ACTION: 'outline',
+}
+
+function filterByTab(results: SearchResultItem[], tab: string): SearchResultItem[] {
+  if (tab === 'all') return results
+  if (tab === 'projects') {
+    return results.filter((r) => r.category === 'PROJECT' || r.category === 'RECENT_PROJECT')
+  }
+  if (tab === 'templates') {
+    return results.filter((r) => r.category === 'TEMPLATE')
+  }
+  return results
+}
 
 export function SearchPage() {
   const [query, setQuery] = useState('')
+  const [tab, setTab] = useState('all')
   const debouncedQuery = useDebounce(query, 200)
+  const { data, isFetching, isLoading } = useUnifiedSearch(debouncedQuery)
+  const { data: history } = useSearchHistory()
 
-  const results = debouncedQuery
-    ? allResults.filter((r) => r.title.toLowerCase().includes(debouncedQuery.toLowerCase()))
-    : []
+  const results = useMemo(() => filterByTab(data?.results ?? [], tab), [data?.results, tab])
+
+  const showHistory = !debouncedQuery && history && history.length > 0
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl font-bold tracking-tight">Search</h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Find projects, templates, components, and lessons.
+          Find projects, templates, components, and engineering knowledge.
         </p>
 
         <div className="relative mt-6">
@@ -60,29 +88,47 @@ export function SearchPage() {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search everything…"
+            placeholder="Search everything… (⌘K)"
             className="pl-10"
             autoFocus
             aria-label="Search"
           />
+          {(isLoading || isFetching) && debouncedQuery && (
+            <Loader2 className="text-muted-foreground absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 animate-spin" />
+          )}
         </div>
 
-        <Tabs defaultValue="all" className="mt-6">
+        {showHistory && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {history.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setQuery(item.query)}
+                className="bg-muted hover:bg-accent rounded-full px-3 py-1 text-xs transition-colors"
+              >
+                {item.query}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <Tabs value={tab} onValueChange={setTab} className="mt-6">
           <TabsList>
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="projects">Projects</TabsTrigger>
             <TabsTrigger value="templates">Templates</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="all" className="mt-4">
-            {!debouncedQuery && (
+          <TabsContent value={tab} className="mt-4">
+            {!debouncedQuery && !showHistory && (
               <EmptyState
                 icon={Search}
                 title="Start typing to search"
                 description="Search across projects, templates, components, and learning content."
               />
             )}
-            {debouncedQuery && results.length === 0 && (
+            {debouncedQuery && results.length === 0 && !isFetching && (
               <EmptyState
                 icon={Search}
                 title="No results found"
@@ -92,18 +138,27 @@ export function SearchPage() {
             {results.length > 0 && (
               <div className="space-y-2">
                 {results.map((result) => {
-                  const Icon = typeIcons[result.type]
+                  const Icon = categoryIcons[result.category]
                   return (
-                    <Link key={result.title} to={result.path}>
+                    <Link key={result.id} to={result.route}>
                       <Card className="transition-shadow hover:shadow-[var(--shadow-elevation-2)]">
                         <CardContent className="flex items-center gap-3 p-4">
-                          <Icon className="text-muted-foreground h-4 w-4" aria-hidden />
-                          <span className="flex-1 text-sm font-medium">{result.title}</span>
+                          <Icon className="text-muted-foreground h-4 w-4 shrink-0" aria-hidden />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium">
+                              {highlightText(result.title, result.highlights)}
+                            </p>
+                            {result.subtitle && (
+                              <p className="text-muted-foreground truncate text-xs">
+                                {result.subtitle}
+                              </p>
+                            )}
+                          </div>
                           <Badge
-                            variant={typeColors[result.type]}
+                            variant={categoryVariants[result.category]}
                             className="text-[10px] capitalize"
                           >
-                            {result.type}
+                            {categoryLabels[result.category]}
                           </Badge>
                         </CardContent>
                       </Card>
@@ -111,6 +166,11 @@ export function SearchPage() {
                   )
                 })}
               </div>
+            )}
+            {data && debouncedQuery && (
+              <p className="text-muted-foreground mt-4 text-center text-xs">
+                {data.totalCount} results in {data.tookMs}ms
+              </p>
             )}
           </TabsContent>
         </Tabs>

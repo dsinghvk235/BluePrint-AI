@@ -73,6 +73,37 @@ export interface Project {
   tags: string[]
   favorite: boolean
   archived: boolean
+  pinned: boolean
+  exportCount: number
+  lastAiModel?: string | null
+  lastAiProvider?: string | null
+  lastPromptVersion?: string | null
+}
+
+export interface FeedbackSummary {
+  averageRating: number
+  totalReviews: number
+  helpfulCount: number
+  notHelpfulCount: number
+}
+
+export interface ProjectMetadata {
+  id: string
+  ownerId: string
+  name: string
+  currentVersion: number
+  status: ProjectStatus
+  theme?: string | null
+  createdAt: string
+  updatedAt: string
+  lastOpened?: string | null
+  favorite: boolean
+  pinned: boolean
+  exportCount: number
+  lastAiModel?: string | null
+  lastAiProvider?: string | null
+  lastPromptVersion?: string | null
+  feedbackSummary: FeedbackSummary
 }
 
 export interface CreateProjectInput {
@@ -93,6 +124,7 @@ export interface UpdateProjectInput {
   theme?: string
   tags?: string[]
   favorite?: boolean
+  pinned?: boolean
 }
 
 export interface ProjectListParams {
