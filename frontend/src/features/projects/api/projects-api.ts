@@ -4,6 +4,7 @@ import type {
   PaginatedResponse,
   Project,
   ProjectListParams,
+  ProjectMetadata,
   UpdateProjectInput,
 } from '@/shared/types'
 
@@ -26,6 +27,10 @@ export const projectsApi = {
   archive: (id: string) => api.patch<Project>(`/projects/${id}/archive`),
 
   duplicate: (id: string) => api.post<Project>(`/projects/${id}/duplicate`),
+
+  pin: (id: string) => api.patch<Project>(`/projects/${id}/pin`),
+
+  metadata: (id: string) => api.get<ProjectMetadata>(`/projects/${id}/metadata`),
 
   delete: (id: string) => api.delete<void>(`/projects/${id}`),
 

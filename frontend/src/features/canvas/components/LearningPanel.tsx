@@ -1,72 +1,55 @@
-import { motion } from 'framer-motion'
-import { BookOpen, ChevronDown, Lightbulb, MessageSquare } from 'lucide-react'
-import { useState } from 'react'
+import { BookOpen } from 'lucide-react'
+import { useEffect } from 'react'
 
-import { LEARNING_LAYERS } from '@/shared/constants'
+import { useCanvasStore } from '@/features/canvas/stores/canvas-store'
+import { DecisionLogPanel } from '@/features/learning/components/DecisionLogPanel'
+import { DependencyExplorer } from '@/features/learning/components/DependencyExplorer'
+import { LearningModeSelector } from '@/features/learning/components/LearningModeSelector'
+import { MentorChatPanel } from '@/features/learning/components/MentorChatPanel'
+import { ProgressiveLearningLayers } from '@/features/learning/components/ProgressiveLearningLayers'
+import { useLearningStore } from '@/features/learning/stores/learning-store'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
   Badge,
+  Input,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
+  Textarea,
 } from '@/shared/ui'
-import { cn } from '@/shared/utils'
 
-const layerContent: Record<string, { summary: string; details: string }> = {
-  architecture: {
-    summary: 'A microservices architecture with API gateway pattern.',
-    details:
-      'The system uses an API Gateway as the single entry point, routing requests to specialized services. Auth and User services handle identity and profile management, with a shared PostgreSQL database for persistence.',
-  },
-  component: {
-    summary: 'API Gateway — routes and authenticates incoming requests.',
-    details:
-      'The API Gateway terminates TLS, validates JWT tokens, applies rate limiting, and routes requests to downstream services. It implements the Backend for Frontend (BFF) pattern for client-specific aggregations.',
-  },
-  why: {
-    summary: 'Decouples clients from internal service topology.',
-    details:
-      'Without a gateway, clients would need to know every service endpoint. The gateway provides a stable API surface while allowing internal services to evolve independently.',
-  },
-  principle: {
-    summary: 'Single Responsibility & Separation of Concerns',
-    details:
-      'Each service owns a bounded context. The gateway handles cross-cutting concerns (auth, routing, rate limiting) so domain services stay focused on business logic.',
-  },
-  tradeoffs: {
-    summary: 'Added latency vs. simplified client integration',
-    details:
-      'Pros: Centralized auth, easier client SDKs, service discovery abstraction. Cons: Single point of failure (mitigated by HA deployment), additional network hop adds ~5-15ms latency.',
-  },
-  alternatives: {
-    summary: 'Service mesh, direct client-to-service, monolith',
-    details:
-      'A service mesh (Istio/Linkerd) handles routing at the infrastructure layer. Direct calls reduce latency but increase client complexity. A monolith simplifies early development but limits independent scaling.',
-  },
-  interview: {
-    summary: 'Common system design questions for this pattern',
-    details:
-      '1. How would you handle gateway failure? 2. When would you choose a service mesh over an API gateway? 3. How do you prevent the gateway from becoming a bottleneck? 4. Design rate limiting for 1M RPS.',
-  },
+interface LearningPanelProps {
+  projectId: string
 }
 
-export function LearningPanel() {
-  const [expandedLayer, setExpandedLayer] = useState<string | null>('architecture')
+export function LearningPanel({ projectId }: LearningPanelProps) {
+  const selected = useCanvasStore((s) => s.nodes.find((n) => n.selected) ?? null)
+  const updateNodeData = useCanvasStore((s) => s.updateNodeData)
+  const edges = useCanvasStore((s) => s.edges)
+  const setSelectedNodeId = useLearningStore((s) => s.setSelectedNodeId)
+
+  const outbound = selected ? edges.filter((e) => e.source === selected.id).length : 0
+  const inbound = selected ? edges.filter((e) => e.target === selected.id).length : 0
+
+  useEffect(() => {
+    setSelectedNodeId(selected?.id ?? null)
+  }, [selected?.id, setSelectedNodeId])
 
   return (
     <div className="flex h-full flex-col">
       <div className="border-border border-b p-4">
         <div className="flex items-center gap-2">
           <BookOpen className="text-primary h-4 w-4" aria-hidden />
-          <h2 className="text-sm font-semibold">Learning Panel</h2>
+          <h2 className="text-sm font-semibold">Inspector</h2>
         </div>
         <p className="text-muted-foreground mt-1 text-xs">
-          Explore step by step — never overwhelm, always learn.
+          Progressive learning, AI mentor, and component properties.
         </p>
+        <LearningModeSelector className="mt-3" />
       </div>
 
       <Tabs defaultValue="learn" className="flex flex-1 flex-col overflow-hidden">
@@ -75,7 +58,7 @@ export function LearningPanel() {
             Learn
           </TabsTrigger>
           <TabsTrigger value="ai" className="text-xs">
-            AI
+            Mentor
           </TabsTrigger>
           <TabsTrigger value="props" className="text-xs">
             Properties
@@ -83,131 +66,99 @@ export function LearningPanel() {
         </TabsList>
 
         <TabsContent value="learn" className="flex-1 overflow-y-auto px-4 pb-4">
-          <div className="mt-2 space-y-1">
-            {LEARNING_LAYERS.map((layer, index) => {
-              const isExpanded = expandedLayer === layer.id
-              const content = layerContent[layer.id]
-              const isAccessible = index === 0 || expandedLayer !== null
-
-              return (
-                <motion.div
-                  key={layer.id}
-                  initial={false}
-                  animate={{ opacity: isAccessible ? 1 : 0.5 }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setExpandedLayer(isExpanded ? null : layer.id)}
-                    className={cn(
-                      'hover:bg-accent flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left transition-colors',
-                      isExpanded && 'bg-accent',
-                    )}
-                    aria-expanded={isExpanded}
-                  >
-                    <span
-                      className={cn(
-                        'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold',
-                        isExpanded ? 'btn-brand shadow-none' : 'bg-muted text-muted-foreground',
-                      )}
-                    >
-                      {index + 1}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">{layer.label}</p>
-                      {!isExpanded && (
-                        <p className="text-muted-foreground truncate text-xs">
-                          {layer.description}
-                        </p>
-                      )}
-                    </div>
-                    <ChevronDown
-                      className={cn(
-                        'text-muted-foreground h-4 w-4 shrink-0 transition-transform',
-                        isExpanded && 'rotate-180',
-                      )}
-                    />
-                  </button>
-
-                  {isExpanded && content && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="px-3 pb-3 pl-10"
-                    >
-                      <p className="text-sm font-medium">{content.summary}</p>
-                      <p className="text-muted-foreground mt-2 text-xs leading-relaxed">
-                        {content.details}
-                      </p>
-                      {index < LEARNING_LAYERS.length - 1 && (
-                        <button
-                          type="button"
-                          onClick={() => setExpandedLayer(LEARNING_LAYERS[index + 1]?.id ?? null)}
-                          className="text-primary mt-3 text-xs font-medium hover:underline"
-                        >
-                          Continue to {LEARNING_LAYERS[index + 1]?.label} →
-                        </button>
-                      )}
-                    </motion.div>
-                  )}
-                </motion.div>
-              )
-            })}
-          </div>
+          {selected ? (
+            <div className="mt-2">
+              <p className="text-muted-foreground mb-2 text-xs">
+                Learning about{' '}
+                <span className="text-foreground font-medium">{selected.data.label}</span>
+              </p>
+              <DependencyExplorer projectId={projectId} nodeId={selected.id} />
+              <ProgressiveLearningLayers projectId={projectId} nodeId={selected.id} />
+              <DecisionLogPanel projectId={projectId} nodeId={selected.id} />
+            </div>
+          ) : (
+            <p className="text-muted-foreground mt-4 text-center text-xs">
+              Select a component on the canvas to begin progressive learning.
+            </p>
+          )}
         </TabsContent>
 
-        <TabsContent value="ai" className="flex-1 overflow-y-auto px-4 pb-4">
-          <div className="bg-muted/50 mt-2 rounded-lg p-4">
-            <div className="flex items-start gap-2">
-              <MessageSquare className="text-primary mt-0.5 h-4 w-4 shrink-0" />
-              <div>
-                <p className="text-sm font-medium">AI Explanation</p>
-                <p className="text-muted-foreground mt-2 text-xs leading-relaxed">
-                  The API Gateway pattern is ideal here because Netflix-scale systems need a single
-                  entry point for thousands of microservices. It enables centralized authentication,
-                  request routing, and protocol translation while keeping individual services
-                  independently deployable.
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="mt-3 flex items-center gap-2">
-            <Lightbulb className="text-warning h-4 w-4" aria-hidden />
-            <span className="text-muted-foreground text-xs">
-              Select a component on the canvas for contextual explanations.
-            </span>
+        <TabsContent value="ai" className="flex flex-1 flex-col overflow-hidden px-4 pb-4">
+          <div className="mt-2 min-h-0 flex-1">
+            <MentorChatPanel
+              projectId={projectId}
+              nodeId={selected?.id ?? null}
+              nodeLabel={selected?.data.label}
+            />
           </div>
         </TabsContent>
 
         <TabsContent value="props" className="flex-1 overflow-y-auto px-4 pb-4">
-          <Accordion type="single" collapsible defaultValue="details" className="mt-2">
-            <AccordionItem value="details">
-              <AccordionTrigger className="text-sm">Component Details</AccordionTrigger>
-              <AccordionContent>
-                <dl className="space-y-2 text-xs">
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Name</dt>
-                    <dd className="font-medium">API Gateway</dd>
+          {selected ? (
+            <Accordion type="single" collapsible defaultValue="details" className="mt-2">
+              <AccordionItem value="details">
+                <AccordionTrigger className="text-sm">Component Details</AccordionTrigger>
+                <AccordionContent className="space-y-3">
+                  <div>
+                    <label className="text-muted-foreground text-xs">Name</label>
+                    <Input
+                      value={selected.data.label}
+                      onChange={(e) => updateNodeData(selected.id, { label: e.target.value })}
+                      className="mt-1 h-8 text-sm"
+                    />
                   </div>
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Type</dt>
-                    <dd>
-                      <Badge variant="secondary">Service</Badge>
-                    </dd>
+                  <div>
+                    <label className="text-muted-foreground text-xs">Subtitle</label>
+                    <Input
+                      value={selected.data.subtitle ?? ''}
+                      onChange={(e) => updateNodeData(selected.id, { subtitle: e.target.value })}
+                      className="mt-1 h-8 text-sm"
+                    />
                   </div>
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Protocol</dt>
-                    <dd className="font-medium">HTTP/REST</dd>
+                  <div>
+                    <label className="text-muted-foreground text-xs">Technology</label>
+                    <Input
+                      value={selected.data.technology ?? ''}
+                      onChange={(e) => updateNodeData(selected.id, { technology: e.target.value })}
+                      className="mt-1 h-8 text-sm"
+                      placeholder="e.g. PostgreSQL, Redis"
+                    />
                   </div>
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Connections</dt>
-                    <dd className="font-medium">2 outbound</dd>
+                  <div>
+                    <label className="text-muted-foreground text-xs">Description</label>
+                    <Textarea
+                      value={selected.data.description ?? ''}
+                      onChange={(e) => updateNodeData(selected.id, { description: e.target.value })}
+                      className="mt-1 text-sm"
+                      rows={3}
+                    />
                   </div>
-                </dl>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+                  <dl className="space-y-2 text-xs">
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Type</dt>
+                      <dd>
+                        <Badge variant="secondary">{selected.data.category}</Badge>
+                      </dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Status</dt>
+                      <dd className="font-medium capitalize">{selected.data.status}</dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Connections</dt>
+                      <dd className="font-medium">
+                        {inbound} in · {outbound} out
+                      </dd>
+                    </div>
+                  </dl>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          ) : (
+            <p className="text-muted-foreground mt-4 text-center text-xs">
+              Select a node to inspect its properties
+            </p>
+          )}
         </TabsContent>
       </Tabs>
     </div>

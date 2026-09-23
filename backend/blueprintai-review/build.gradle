@@ -1,5 +1,9 @@
 dependencies {
 	api project(':blueprintai-common')
+	api project(':blueprintai-project')
+
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }

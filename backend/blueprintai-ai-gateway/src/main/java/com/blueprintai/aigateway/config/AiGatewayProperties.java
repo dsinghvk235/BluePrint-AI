@@ -21,7 +21,11 @@ public class AiGatewayProperties {
     private Duration retryInitialDelay = Duration.ofMillis(500);
     private double retryMultiplier = 2.0;
     private List<AiProviderType> providerPriority = List.of(
-            AiProviderType.OPENAI, AiProviderType.CLAUDE, AiProviderType.GEMINI, AiProviderType.DEEPSEEK);
+            AiProviderType.OLLAMA,
+            AiProviderType.OPENAI,
+            AiProviderType.CLAUDE,
+            AiProviderType.GEMINI,
+            AiProviderType.DEEPSEEK);
     private Map<AiProviderType, ProviderConfig> providers = new EnumMap<>(AiProviderType.class);
 
     public boolean isEnabled() {
@@ -193,9 +197,12 @@ public class AiGatewayProperties {
             return apiKey != null && !apiKey.isBlank();
         }
 
-        /** Enabled explicitly, or auto-enabled when an API key is present. */
+        /** Active only when explicitly enabled and credentials (or local base URL) are present. */
         public boolean isConfigured() {
-            return enabled || hasApiKey();
+            if (!enabled) {
+                return false;
+            }
+            return hasApiKey() || (baseUrl != null && !baseUrl.isBlank());
         }
     }
 }

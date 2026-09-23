@@ -105,6 +105,9 @@ public class ProjectServiceImpl implements ProjectService {
         if (request.favorite() != null) {
             project.setFavorite(request.favorite());
         }
+        if (request.pinned() != null) {
+            project.setPinned(request.pinned());
+        }
 
         return ProjectMapper.toResponse(projectRepository.save(project));
     }
@@ -178,6 +181,22 @@ public class ProjectServiceImpl implements ProjectService {
         return projectRepository.findRecentByOwnerId(ownerId, pageable).stream()
                 .map(ProjectMapper::toResponse)
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public ProjectResponse togglePin(UUID projectId, UUID ownerId) {
+        Project project = findOwnedProject(projectId, ownerId);
+        project.setPinned(!project.isPinned());
+        return ProjectMapper.toResponse(projectRepository.save(project));
+    }
+
+    @Override
+    @Transactional
+    public void recordExport(UUID projectId, UUID ownerId) {
+        Project project = findOwnedProject(projectId, ownerId);
+        project.setExportCount(project.getExportCount() + 1);
+        projectRepository.save(project);
     }
 
     private Project findOwnedProject(UUID projectId, UUID ownerId) {

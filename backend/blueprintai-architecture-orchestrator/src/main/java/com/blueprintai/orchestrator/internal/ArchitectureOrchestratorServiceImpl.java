@@ -20,6 +20,7 @@ import com.blueprintai.orchestrator.api.dto.ValidateArchitectureRequest;
 import com.blueprintai.orchestrator.api.dto.ValidateArchitectureResponse;
 import com.blueprintai.orchestrator.internal.entity.ArchitectureGeneration;
 import com.blueprintai.orchestrator.internal.generator.ArchitectureGenerator;
+import com.blueprintai.orchestrator.internal.generator.DiagramFromHighLevelDesignBuilder;
 import com.blueprintai.orchestrator.internal.generator.GeneratorLookup;
 import com.blueprintai.orchestrator.internal.repository.ArchitectureGenerationRepository;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -33,6 +34,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,8 +50,8 @@ public class ArchitectureOrchestratorServiceImpl implements ArchitectureOrchestr
     private final ArchitectureGenerationRepository generationRepository;
     private final ArchitectureValidator architectureValidator;
     private final ObjectMapper objectMapper;
-    private final ArchitectureGenerationRunner generationRunner;
     private final ArchitectureGenerationEngine generationEngine;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ArchitectureOrchestratorServiceImpl(
             AiGatewayService aiGatewayService,
@@ -57,15 +59,15 @@ public class ArchitectureOrchestratorServiceImpl implements ArchitectureOrchestr
             ArchitectureGenerationRepository generationRepository,
             ArchitectureValidator architectureValidator,
             ObjectMapper objectMapper,
-            ArchitectureGenerationRunner generationRunner,
-            ArchitectureGenerationEngine generationEngine) {
+            ArchitectureGenerationEngine generationEngine,
+            ApplicationEventPublisher eventPublisher) {
         this.aiGatewayService = aiGatewayService;
         this.generatorLookup = generatorLookup;
         this.generationRepository = generationRepository;
         this.architectureValidator = architectureValidator;
         this.objectMapper = objectMapper;
-        this.generationRunner = generationRunner;
         this.generationEngine = generationEngine;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -91,10 +93,10 @@ public class ArchitectureOrchestratorServiceImpl implements ArchitectureOrchestr
         generation.setSystemDescription(request.systemDescription());
         generation.setSystemType(request.systemType());
         generation.setProgressPercent(0);
-        generation.setCurrentStep("initializing");
+        generation.setCurrentStep("queued");
         generation = generationRepository.save(generation);
 
-        generationRunner.runGeneration(generation.getId(), request.useCache());
+        eventPublisher.publishEvent(new GenerationStartedEvent(generation.getId(), request.useCache()));
 
         return toStatusResponse(generation, null);
     }
@@ -122,20 +124,32 @@ public class ArchitectureOrchestratorServiceImpl implements ArchitectureOrchestr
             context = context + "\n" + request.additionalContext();
         }
 
-        ArchitectureGenerator.GenerationContext genContext = new ArchitectureGenerator.GenerationContext(
-                generation.getSystemDescription(),
-                generation.getSystemType(),
-                context,
-                userId,
-                request.projectId(),
-                generation.getCorrelationId(),
-                false);
-
-        JsonNode sectionResult = generator.generate(genContext);
         ObjectNode payload = generation.getArchitecturePayload() != null
                 ? (ObjectNode) generation.getArchitecturePayload().deepCopy()
                 : objectMapper.createObjectNode();
+
+        JsonNode sectionResult;
+        if (request.section() == ArchitectureSection.DIAGRAM) {
+            sectionResult = DiagramFromHighLevelDesignBuilder.build(
+                    payload.get("highLevelDesign"), objectMapper);
+        } else {
+            ArchitectureGenerator.GenerationContext genContext = new ArchitectureGenerator.GenerationContext(
+                    generation.getSystemDescription(),
+                    generation.getSystemType(),
+                    context,
+                    userId,
+                    request.projectId(),
+                    generation.getCorrelationId(),
+                    false);
+            sectionResult = generator.generate(genContext);
+        }
+
         generationEngine.applySection(payload, request.section(), sectionResult);
+
+        if (request.section() == ArchitectureSection.HIGH_LEVEL_DESIGN) {
+            JsonNode diagram = DiagramFromHighLevelDesignBuilder.build(payload.get("highLevelDesign"), objectMapper);
+            generationEngine.applySection(payload, ArchitectureSection.DIAGRAM, diagram);
+        }
         generation.setArchitecturePayload(payload);
         generation.setUpdatedAt(Instant.now());
         generationRepository.save(generation);

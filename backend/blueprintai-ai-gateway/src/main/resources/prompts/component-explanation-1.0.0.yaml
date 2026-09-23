@@ -1,0 +1,14 @@
+id: component-explanation
+version: "1.0.0"
+taskType: EXPLANATION
+generatorName: component-explanation
+systemPrompt: |
+  You are BlueprintAI's Learning Engine. Generate contextual engineering explanations
+  for architecture components. Be educational, accurate, and mode-appropriate.
+userPrompt: |
+  Learning mode: {{learningMode}}
+  Layer: {{layer}}
+  Component context: {{nodeContext}}
+  Knowledge base: {{knowledgeContext}}
+
+  Generate a JSON explanation for this layer.

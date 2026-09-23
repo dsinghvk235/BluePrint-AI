@@ -28,6 +28,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -37,6 +39,8 @@ import org.springframework.stereotype.Service;
 public class AiGatewayServiceImpl implements AiGatewayService {
 
     private static final Logger log = LoggerFactory.getLogger(AiGatewayServiceImpl.class);
+    private static final Pattern RATE_LIMIT_RETRY_PATTERN =
+            Pattern.compile("Please retry in ([0-9.]+)s", Pattern.CASE_INSENSITIVE);
     private static final String MODULE_NAME = "ai-gateway";
 
     private final AiGatewayProperties properties;
@@ -222,7 +226,7 @@ public class AiGatewayServiceImpl implements AiGatewayService {
                     circuitBreaker.recordFailure(providerType);
                     failedProviders.add(providerType);
                     aiLogService.logFailure(requestId, request, providerType, null, e.getMessage(), promptHash);
-                    sleepBackoff(attempt);
+                    sleepBackoff(attempt, e);
                 }
             }
         }
@@ -270,8 +274,16 @@ public class AiGatewayServiceImpl implements AiGatewayService {
         return UUID.randomUUID();
     }
 
-    private void sleepBackoff(int attempt) {
-        long delay = (long) (properties.getRetryInitialDelay().toMillis() * Math.pow(properties.getRetryMultiplier(), attempt));
+    private void sleepBackoff(int attempt, Exception error) {
+        long delay = (long) (properties.getRetryInitialDelay().toMillis()
+                * Math.pow(properties.getRetryMultiplier(), attempt));
+        if (error != null && error.getMessage() != null) {
+            Matcher matcher = RATE_LIMIT_RETRY_PATTERN.matcher(error.getMessage());
+            if (matcher.find()) {
+                long rateLimitMs = (long) (Double.parseDouble(matcher.group(1)) * 1000) + 1000;
+                delay = Math.max(delay, rateLimitMs);
+            }
+        }
         try {
             Thread.sleep(delay);
         } catch (InterruptedException e) {

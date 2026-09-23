@@ -33,13 +33,23 @@ export const EXAMPLE_PROMPTS = [
 ] as const
 
 export const LEARNING_LAYERS = [
-  { id: 'architecture', label: 'Architecture', description: 'System overview and boundaries' },
-  { id: 'component', label: 'Component', description: 'Individual service or module' },
-  { id: 'why', label: 'Why', description: 'Rationale behind the design choice' },
-  { id: 'principle', label: 'Engineering Principle', description: 'Underlying patterns and laws' },
-  { id: 'tradeoffs', label: 'Trade-offs', description: 'Costs and benefits of this approach' },
-  { id: 'alternatives', label: 'Alternatives', description: 'Other viable design options' },
-  { id: 'interview', label: 'Interview Questions', description: 'Practice questions for mastery' },
+  { id: 'overview', label: 'Overview', description: 'What is this component?' },
+  { id: 'purpose', label: 'Purpose', description: 'Why is it used in the system?' },
+  { id: 'reasoning', label: 'Reasoning', description: 'Why was it selected here?' },
+  { id: 'principle', label: 'Engineering Principle', description: 'Patterns and laws applied' },
+  { id: 'tradeoffs', label: 'Trade-offs', description: 'Costs and benefits' },
+  { id: 'alternatives', label: 'Alternatives', description: 'Other viable options' },
+  { id: 'best-practices', label: 'Best Practices', description: 'Production lessons and pitfalls' },
+  { id: 'interview', label: 'Interview Questions', description: 'Practice for mastery' },
+  { id: 'advanced', label: 'Advanced Discussion', description: 'Deep engineering analysis' },
+] as const
+
+export const LEARNING_MODES = [
+  { id: 'BEGINNER', label: 'Beginner' },
+  { id: 'INTERMEDIATE', label: 'Intermediate' },
+  { id: 'SDE_1', label: 'SDE-1' },
+  { id: 'SENIOR_ENGINEER', label: 'Senior Engineer' },
+  { id: 'STAFF_ENGINEER', label: 'Staff Engineer' },
 ] as const
 
 export const QUERY_STALE_TIME = {

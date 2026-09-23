@@ -13,7 +13,7 @@ public class ArchitectureGenerationRunner {
         this.generationEngine = generationEngine;
     }
 
-    @Async
+    @Async("generationTaskExecutor")
     public void runGeneration(UUID generationId, boolean useCache) {
         generationEngine.executeGeneration(generationId, useCache);
     }

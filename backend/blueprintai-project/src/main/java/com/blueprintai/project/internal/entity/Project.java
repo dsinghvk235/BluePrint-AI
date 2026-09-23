@@ -70,6 +70,21 @@ public class Project {
     @Column(name = "is_archived", nullable = false)
     private boolean archived = false;
 
+    @Column(name = "is_pinned", nullable = false)
+    private boolean pinned = false;
+
+    @Column(name = "export_count", nullable = false)
+    private int exportCount = 0;
+
+    @Column(name = "last_ai_model", length = 100)
+    private String lastAiModel;
+
+    @Column(name = "last_ai_provider", length = 50)
+    private String lastAiProvider;
+
+    @Column(name = "last_prompt_version", length = 50)
+    private String lastPromptVersion;
+
     @PrePersist
     void onCreate() {
         Instant now = Instant.now();
@@ -189,5 +204,45 @@ public class Project {
 
     public void setArchived(boolean archived) {
         this.archived = archived;
+    }
+
+    public boolean isPinned() {
+        return pinned;
+    }
+
+    public void setPinned(boolean pinned) {
+        this.pinned = pinned;
+    }
+
+    public int getExportCount() {
+        return exportCount;
+    }
+
+    public void setExportCount(int exportCount) {
+        this.exportCount = exportCount;
+    }
+
+    public String getLastAiModel() {
+        return lastAiModel;
+    }
+
+    public void setLastAiModel(String lastAiModel) {
+        this.lastAiModel = lastAiModel;
+    }
+
+    public String getLastAiProvider() {
+        return lastAiProvider;
+    }
+
+    public void setLastAiProvider(String lastAiProvider) {
+        this.lastAiProvider = lastAiProvider;
+    }
+
+    public String getLastPromptVersion() {
+        return lastPromptVersion;
+    }
+
+    public void setLastPromptVersion(String lastPromptVersion) {
+        this.lastPromptVersion = lastPromptVersion;
     }
 }

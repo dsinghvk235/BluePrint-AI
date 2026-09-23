@@ -1,10 +1,11 @@
-import { Archive, Copy, MoreHorizontal, Pencil, Sparkles, Star, Trash2 } from 'lucide-react'
+import { Archive, Copy, MoreHorizontal, Pencil, Pin, Sparkles, Star, Trash2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import {
   useArchiveProject,
   useDuplicateProject,
   useToggleFavorite,
+  useTogglePin,
 } from '@/features/projects/hooks/use-projects'
 import { ROUTES } from '@/shared/constants'
 import type { Project } from '@/shared/types'
@@ -35,6 +36,7 @@ function formatRelative(date: string | null | undefined): string {
 
 export function ProjectCard({ project, onRename, onDelete }: ProjectCardProps) {
   const toggleFavorite = useToggleFavorite()
+  const togglePin = useTogglePin()
   const duplicateProject = useDuplicateProject()
   const archiveProject = useArchiveProject()
 
@@ -56,6 +58,17 @@ export function ProjectCard({ project, onRename, onDelete }: ProjectCardProps) {
             </div>
           </Link>
           <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              aria-label={project.pinned ? 'Unpin project' : 'Pin project'}
+              onClick={() => togglePin.mutate(project.id)}
+            >
+              <Pin
+                className={`h-4 w-4 ${project.pinned ? 'fill-[var(--color-brand)] text-[var(--color-brand)]' : ''}`}
+              />
+            </Button>
             <Button
               variant="ghost"
               size="icon"

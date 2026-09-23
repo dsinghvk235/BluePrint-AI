@@ -63,7 +63,11 @@ public class ProviderRouter {
             score -= costFactor * 10;
         }
         if (taskType == AiTaskType.ARCHITECTURE_GENERATION || taskType == AiTaskType.REQUIREMENTS) {
-            if (provider == AiProviderType.CLAUDE || provider == AiProviderType.OPENAI) {
+            if (provider == AiProviderType.OLLAMA) {
+                score += 25;
+            } else if (provider == AiProviderType.GEMINI) {
+                score += 20;
+            } else if (provider == AiProviderType.CLAUDE || provider == AiProviderType.OPENAI) {
                 score += 15;
             }
         }

@@ -20,4 +20,9 @@ public record ProjectResponse(
         Instant lastOpened,
         List<String> tags,
         boolean favorite,
-        boolean archived) {}
+        boolean archived,
+        boolean pinned,
+        int exportCount,
+        String lastAiModel,
+        String lastAiProvider,
+        String lastPromptVersion) {}

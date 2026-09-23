@@ -1,5 +1,7 @@
 /**
  * Canvas / Diagram Engine feature module.
- * Phase 3+: React Flow workspace, nodes, edges, auto-layout.
+ * Interactive workspace with React Flow, diagram engine, and AI integration.
  */
-export const CANVAS_FEATURE = 'canvas' as const
+export { WorkspacePage } from '@/features/canvas/pages/WorkspacePage'
+export { processDiagramJson } from '@/features/canvas/engine'
+export type { BlueprintNode, BlueprintEdge, AiDiagramJson } from '@/features/canvas/types/diagram'

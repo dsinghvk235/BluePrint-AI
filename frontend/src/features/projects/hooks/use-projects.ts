@@ -159,3 +159,12 @@ export function useToggleFavorite() {
     onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.projects.all }),
   })
 }
+
+export function useTogglePin() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => projectsApi.pin(id),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.projects.all }),
+  })
+}

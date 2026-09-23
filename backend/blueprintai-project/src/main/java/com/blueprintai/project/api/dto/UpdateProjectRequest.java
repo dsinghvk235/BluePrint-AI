@@ -12,4 +12,5 @@ public record UpdateProjectRequest(
         ProjectStatus status,
         @Size(max = 50) String theme,
         List<@Size(max = 50) String> tags,
-        Boolean favorite) {}
+        Boolean favorite,
+        Boolean pinned) {}

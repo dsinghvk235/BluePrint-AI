@@ -24,6 +24,11 @@ public final class ProjectMapper {
                 project.getLastOpened(),
                 List.copyOf(project.getTags()),
                 project.isFavorite(),
-                project.isArchived());
+                project.isArchived(),
+                project.isPinned(),
+                project.getExportCount(),
+                project.getLastAiModel(),
+                project.getLastAiProvider(),
+                project.getLastPromptVersion());
     }
 }
